@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Manage Points - Dashboard</title>
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+  <script type="module" src="firebase-db.js"></script>
+  <script src="shared-sidebar.js"></script>
+
+  <style>
+    .points-container {
+      padding: 20px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    .page-header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    .page-header h1 {
+      color: #1a73e8;
+      font-size: 28px;
+      margin-bottom: 10px;
+    }
+    .page-header p {
+      color: #666;
+      font-size: 16px;
+    }
+    .search-bar {
+      width: 100%;
+      max-width: 500px;
+      margin: 0 auto 30px;
+      position: relative;
+    }
+    .search-bar input {
+      width: 100%;
+      padding: 12px 20px;
+      padding-left: 45px;
+      border: 2px solid #e0e0e0;
+      border-radius: 25px;
+      font-size: 16px;
+      transition: all 0.3s ease;
+    }
+    .search-bar input:focus {
+      border-color: #1a73e8;
+      box-shadow: 0 0 0 3px rgba(26,115,232,0.1);
+      outline: none;
+    }
+    .search-bar i {
+      position: absolute;
+      left: 15px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #666;
+    }
+    .members-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 20px;
+      padding: 10px;
+    }
+    .member-card {
+      background: white;
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .member-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+    }
+    .member-header {
+      display: flex;
+      align-items: center;
+      margin-bottom: 15px;
+    }
+    .member-avatar {
+      width: 50px;
+      height: 50px;
+      background: #e3f2fd;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-right: 15px;
+      color: #1a73e8;
+      font-size: 20px;
+      font-weight: 600;
+    }
+    .member-info h3 {
+      margin: 0;
+      font-size: 18px;
+      font-weight: 600;
+      color: #333;
+    }
+    .member-info p {
+      margin: 3px 0 0;
+      color: #666;
+      font-size: 14px;
+    }
+    .points-form {
+      margin-top: 10px;
+    }
+    .points-form input {
+      width: 100%;
+      padding: 10px;
+      border: 2px solid #e0e0e0;
+      border-radius: 8px;
+      margin-bottom: 10px;
+      font-size: 14px;
+    }
+    .quick-buttons {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+    .quick-btn {
+      flex: 1;
+      padding: 8px 0;
+      border: none;
+      border-radius: 6px;
+      background: #f1f5f9;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      transition: all 0.2s ease;
+    }
+    .quick-btn:hover {
+      background: #1a73e8;
+      color: white;
+    }
+    .update-btn {
+      width: 100%;
+      padding: 10px;
+      border: none;
+      border-radius: 8px;
+      background: #1a73e8;
+      color: white;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s ease;
+    }
+    .update-btn:hover {
+      background: #1557b0;
+    }
+    .success-message {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: #4caf50;
+      color: white;
+      padding: 15px 25px;
+      border-radius: 8px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.15);
+      display: none;
+      z-index: 1000;
+    }
+  </style>
+</head>
+<body>
+  <main class="content">
+    <div class="points-container">
+      <div class="page-header">
+        <h1>Manage Member Points</h1>
+        <p>Add or remove points from members. Use negative values to deduct.</p>
+      </div>
+
+      <div class="search-bar">
+        <i class="fas fa-search"></i>
+        <input type="text" id="searchInput" placeholder="Search members by name or email..." />
+      </div>
+
+      <div class="members-grid" id="membersGrid"></div>
+    </div>
+  </main>
+
+  <div id="successMessage" class="success-message">Update successful!</div>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", async () => {
+      if (!window.firebaseReady) {
+        await new Promise(resolve => window.addEventListener("firebaseReady", resolve, { once: true }));
+      }
+
+      let members = [];
+      try {
+        members = await window.FirebaseDB.getMemberPointsSummary();
+        displayMembers(members);
+      } catch (err) {
+        console.error("Error loading members:", err);
+      }
+
+      const searchInput = document.getElementById("searchInput");
+      searchInput.addEventListener("input", () => {
+        const term = searchInput.value.toLowerCase();
+        const filtered = members.filter(m => 
+          m.name.toLowerCase().includes(term) || 
+          (m.email && m.email.toLowerCase().includes(term))
+        );
+        displayMembers(filtered);
+      });
+
+      function displayMembers(list) {
+        const grid = document.getElementById("membersGrid");
+        grid.innerHTML = list.map((m, i) => {
+          const displayPoints = (m.totalPoints !== undefined && m.totalPoints !== null)
+            ? m.totalPoints
+            : (m.points || 0);
+          return `
+          <div class="member-card">
+            <div class="member-header">
+              <div class="member-avatar">${m.name.split(" ").map(n => n[0]).join("")}</div>
+              <div class="member-info">
+                <h3>${m.name}</h3>
+                <p>Points: <strong>${displayPoints}</strong></p>
+              </div>
+            </div>
+            <form class="points-form" onsubmit="return updatePoints(event, '${m.id}')">
+              <input type="number" id="points-${i}" placeholder="Enter points (+/-)" required />
+              <div class="quick-buttons">
+                <button type="button" class="quick-btn" onclick="quickFill('points-${i}', 1)">+1</button>
+                <button type="button" class="quick-btn" onclick="quickFill('points-${i}', 3)">+3</button>
+                <button type="button" class="quick-btn" onclick="quickFill('points-${i}', -1)">-1</button>
+                <button type="button" class="quick-btn" onclick="quickFill('points-${i}', -3)">-3</button>
+              </div>
+              <button type="submit" class="update-btn">Update Points</button>
+            </form>
+          </div>
+        `}).join("");
+      }
+
+      window.quickFill = (id, val) => {
+        const input = document.getElementById(id);
+        if (input) input.value = val;
+      };
+
+      window.updatePoints = async (e, memberId) => {
+        e.preventDefault();
+        const input = e.target.querySelector("input");
+        const value = parseInt(input.value);
+        if (!value) {
+          alert("Enter a valid number.");
+          return false;
+        }
+        try {
+          const member = members.find(m => m.id === memberId);
+          const pointsRecord = {
+            memberId: member.id,
+            email: member.email,
+            name: member.name,
+            points: value,
+            reason: 'Adjustment',
+            timestamp: new Date().toISOString()
+          };
+          await window.FirebaseDB.addPoints(pointsRecord);
+          try { window.dispatchEvent(new Event('pointsDataChanged')); } catch (_) {}
+          // Reload fresh totals from summary
+          members = await window.FirebaseDB.getMemberPointsSummary();
+          displayMembers(members);
+          showSuccess();
+          input.value = "";
+        } catch (err) {
+          console.error("Error updating points:", err);
+          alert("Failed to update points.");
+        }
+        return false;
+      };
+
+      function showSuccess() {
+        const el = document.getElementById("successMessage");
+        el.style.display = "block";
+        setTimeout(() => el.style.display = "none", 2500);
+      }
+    });
+  </script>
+</body>
+</html>

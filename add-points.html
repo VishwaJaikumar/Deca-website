@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Points - Dashboard</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script type="module" src="firebase-db.js"></script>
+    <script src="shared-sidebar.js"></script>
+
+    <style>
+        .points-container {
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .page-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .page-header h1 {
+            color: #1a73e8;
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+        .page-header p {
+            color: #666;
+            font-size: 16px;
+        }
+        .search-bar {
+            width: 100%;
+            max-width: 500px;
+            margin: 0 auto 30px;
+            position: relative;
+        }
+        .search-bar input {
+            width: 100%;
+            padding: 12px 20px;
+            padding-left: 45px;
+            border: 2px solid #e0e0e0;
+            border-radius: 25px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+        .search-bar input:focus {
+            border-color: #1a73e8;
+            box-shadow: 0 0 0 3px rgba(26,115,232,0.1);
+            outline: none;
+        }
+        .search-bar i {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #666;
+        }
+        .members-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+            padding: 10px;
+        }
+        .member-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        .member-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+        }
+        .member-card.active {
+            border-left: 5px solid #1a73e8;
+        }
+        .member-card.officer {
+            border-left: 5px solid #ffc107;
+        }
+        .member-card.advisor {
+            border-left: 5px solid #dc3545;
+        }
+        .member-card.selected {
+            border: 2px solid #1a73e8;
+            box-shadow: 0 0 0 3px rgba(26,115,232,0.2);
+        }
+        .member-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .member-avatar {
+            width: 50px;
+            height: 50px;
+            background: #e3f2fd;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 15px;
+            color: #1a73e8;
+            font-size: 20px;
+            font-weight: 500;
+        }
+        .member-info {
+            flex: 1;
+        }
+        .member-name {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+            margin: 0 0 5px 0;
+        }
+        .member-type {
+            font-size: 14px;
+            color: #666;
+            margin: 0;
+        }
+        .points-form {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 15px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 500;
+            font-size: 14px;
+        }
+        .form-group input, .form-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 15px;
+            transition: all 0.3s ease;
+        }
+        .form-group input:focus, .form-group textarea:focus {
+            border-color: #1a73e8;
+            box-shadow: 0 0 0 3px rgba(26,115,232,0.1);
+            outline: none;
+        }
+        .form-group textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+        .points-input {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .points-input input {
+            flex: 1;
+        }
+        .points-input .points-buttons {
+            display: flex;
+            gap: 5px;
+        }
+        .points-btn {
+            padding: 8px 12px;
+            border: none;
+            border-radius: 6px;
+            background: #e3f2fd;
+            color: #1a73e8;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+        .points-btn:hover {
+            background: #1a73e8;
+            color: white;
+        }
+        .submit-btn {
+            background-color: #1a73e8;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        .submit-btn:hover {
+            background-color: #1557b0;
+            transform: translateY(-1px);
+        }
+        .submit-btn:active {
+            transform: translateY(0);
+        }
+        .member-details {
+            margin-top: 15px;
+        }
+        .detail-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+            color: #555;
+            font-size: 14px;
+        }
+        .detail-item i {
+            width: 20px;
+            margin-right: 10px;
+            color: #1a73e8;
+        }
+        .current-points {
+            background: #e3f2fd;
+            padding: 10px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        .current-points-value {
+            font-size: 24px;
+            font-weight: 600;
+            color: #1a73e8;
+        }
+        .current-points-label {
+            font-size: 12px;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .success-message {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #4caf50;
+            color: white;
+            padding: 15px 25px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            display: none;
+            animation: slideIn 0.3s ease-out;
+            z-index: 1000;
+        }
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        .filter-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .filter-btn {
+            padding: 8px 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 20px;
+            background: white;
+            color: #666;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        .filter-btn:hover, .filter-btn.active {
+            background: #1a73e8;
+            color: white;
+            border-color: #1a73e8;
+        }
+        .no-members {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+            font-size: 16px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .batch-points-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        .select-all-label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 500;
+            color: #333;
+        }
+        .batch-points-input, .batch-reason-input {
+            flex: 1;
+            padding: 10px;
+            border: 1.5px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 15px;
+            transition: all 0.3s ease;
+        }
+        .batch-points-input:focus, .batch-reason-input:focus {
+            border-color: #1a73e8;
+            box-shadow: 0 0 0 3px rgba(26,115,232,0.1);
+            outline: none;
+        }
+        .batch-btn {
+            padding: 10px 18px;
+            font-size: 15px;
+            background: #1a73e8;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        .batch-btn:hover {
+            background: #1557b0;
+            transform: translateY(-1px);
+        }
+        .batch-btn:active {
+            transform: translateY(0);
+        }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <h1>Dashboard</h1>
+            <button class="toggle-btn">
+                <i class="fas fa-bars"></i>
+            </button>
+        </div>
+        <nav class="sidebar-nav">
+            <div class="nav-item">
+                <div class="nav-link">
+                    <i class="fas fa-users"></i>
+                    <span>Members</span>
+                    <i class="fas fa-chevron-down arrow"></i>
+                </div>
+                <div class="dropdown-content">
+                    <a href="add-member.html">Add Member</a>
+                    <a href="view-members.html">View Members</a>
+                </div>
+            </div>
+            <div class="nav-item">
+                <div class="nav-link">
+                    <i class="fas fa-star"></i>
+                    <span>Points</span>
+                    <i class="fas fa-chevron-down arrow"></i>
+                </div>
+                <div class="dropdown-content">
+                    <a href="view-points.html">View Points</a>
+                    <a href="add-points.html" class="active">Add Points</a>
+                    <a href="points-history.html">History</a>
+                </div>
+            </div>
+            <div class="nav-item">
+                <div class="nav-link">
+                    <i class="fas fa-clock"></i>
+                    <span>Minutes Tracker</span>
+                    <i class="fas fa-chevron-down arrow"></i>
+                </div>
+                <div class="dropdown-content">
+                    <a href="minutes-track.html">Track Time</a>
+                    <a href="minutes-view.html">View Log</a>
+                    <a href="minutes-reports.html">Reports</a>
+                </div>
+            </div>
+            <div class="nav-item">
+                <div class="nav-link">
+                    <i class="fas fa-user-check"></i>
+                    <span>Attendance</span>
+                    <i class="fas fa-chevron-down arrow"></i>
+                </div>
+                <div class="dropdown-content">
+                    <a href="attendance-records.html">Attendance log</a>
+                    <a href="attendance-view.html">Point tracker</a>
+                    <a href="attendance-stats.html">Statistics</a>
+                </div>
+            </div>
+        </nav>
+    </div>
+    <div class="sidebar-overlay"></div>
+    <main class="content">
+        <div class="points-container">
+            <div class="page-header">
+                <h1>Add Points</h1>
+                <p>Assign points to chapter members for their achievements and participation</p>
+            </div>
+
+            <div class="search-bar">
+                <i class="fas fa-search"></i>
+                <input type="text" id="searchInput" placeholder="Search members by name or email...">
+            </div>
+
+            <div class="filter-buttons">
+                <button class="filter-btn active" data-filter="all">All Members</button>
+                <button class="filter-btn" data-filter="active">Active Members</button>
+                <button class="filter-btn" data-filter="officer">Officers</button>
+                <button class="filter-btn" data-filter="advisor">Advisors</button>
+            </div>
+
+            <!-- Select All and Batch Points UI -->
+            <div class="batch-points-container">
+                <label class="select-all-label">
+                    <input type="checkbox" id="selectAllCheckbox"> Select All
+                </label>
+                <input type="number" id="batchPointsInput" min="1" placeholder="Points to Add" class="batch-points-input">
+                <input type="text" id="batchReasonInput" placeholder="Reason" class="batch-reason-input">
+                <button id="batchAddPointsBtn" class="submit-btn batch-btn"><i class="fas fa-plus"></i> Give Points to Selected</button>
+            </div>
+
+            <div class="members-grid" id="membersGrid">
+                <!-- Member cards will be populated here -->
+            </div>
+        </div>
+    </main>
+
+    <div id="successMessage" class="success-message">
+        Points added successfully!
+    </div>
+
+    <script src="js/sidebar.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            const searchInput = document.getElementById('searchInput');
+            const filterButtons = document.querySelectorAll('.filter-btn');
+            let currentFilter = 'all';
+
+            // Wait for Firebase to be ready
+            if (!window.firebaseReady) {
+                await new Promise(resolve => window.addEventListener('firebaseReady', resolve, { once: true }));
+            }
+
+            // Load members from Firebase (with current totals)
+            let members = [];
+            try {
+                members = await window.FirebaseDB.getMemberPointsSummary();
+                displayMembers(members);
+            } catch (error) {
+                console.error('Error loading members:', error);
+                document.getElementById('membersGrid').innerHTML = '<p style="text-align: center; color: #666;">Failed to load members. Please try again.</p>';
+            }
+
+            function displayMembers(membersToDisplay) {
+                const grid = document.getElementById('membersGrid');
+                
+                if (membersToDisplay.length === 0) {
+                    grid.innerHTML = '<p style="text-align: center; color: #666; grid-column: 1 / -1;">No members found.</p>';
+                    return;
+                }
+
+                grid.innerHTML = membersToDisplay.map((member, index) => {
+                    const points = (member.totalPoints !== undefined && member.totalPoints !== null)
+                        ? member.totalPoints
+                        : (member.points || 0);
+                    return `
+                        <div class="member-card ${member.type.toLowerCase()}" data-index="${index}">
+                            <div class="member-header">
+                                <div class="member-avatar">
+                                    ${member.name.split(' ').map(n => n[0]).join('')}
+                                </div>
+                                <div class="member-info">
+                                    <h3 class="member-name">${member.name}</h3>
+                                    <p class="member-type">${member.type}</p>
+                                    <p class="member-points">Current Points: <span class="points-display">${points}</span></p>
+                                </div>
+                            </div>
+                            <form onsubmit="addPoints(event, '${member.id}')" class="points-form">
+                                <div class="form-group">
+                                    <label for="points-${index}">Points to Add</label>
+                                    <input type="number" id="points-${index}" min="1" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="reason-${index}">Reason</label>
+                                    <input type="text" id="reason-${index}" required placeholder="e.g., Meeting attendance, Competition participation">
+                                </div>
+                                <div class="quick-add-buttons">
+                                    <button type="button" onclick="quickAddPoints('${index}', 1)" class="quick-btn">+1</button>
+                                    <button type="button" onclick="quickAddPoints('${index}', 5)" class="quick-btn">+5</button>
+                                    <button type="button" onclick="quickAddPoints('${index}', 10)" class="quick-btn">+10</button>
+                                </div>
+                                <button type="submit" class="add-points-btn">
+                                    <i class="fas fa-plus"></i> Add Points
+                                </button>
+                            </form>
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            function filterMembers(searchTerm, filter) {
+                let filtered = members;
+
+                // Apply search filter
+                if (searchTerm) {
+                    filtered = filtered.filter(member => 
+                        member.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                        member.email.toLowerCase().includes(searchTerm.toLowerCase())
+                    );
+                }
+
+                // Apply type filter
+                if (filter !== 'all') {
+                    filtered = filtered.filter(member => 
+                        member.type.toLowerCase() === filter.toLowerCase()
+                    );
+                }
+
+                displayMembers(filtered);
+            }
+
+            // Search functionality
+            searchInput.addEventListener('input', (e) => {
+                filterMembers(e.target.value, currentFilter);
+            });
+
+            // Filter buttons functionality
+            filterButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    filterButtons.forEach(btn => btn.classList.remove('active'));
+                    button.classList.add('active');
+                    currentFilter = button.dataset.filter;
+                    filterMembers(searchInput.value, currentFilter);
+                });
+            });
+
+            // Quick add points function
+            window.quickAddPoints = function(memberId, points) {
+                const input = document.querySelector(`input[id^="points-"][data-member-id="${memberId}"]`);
+                if (input) {
+                    input.value = points;
+                }
+            };
+
+            // Add points function
+            window.addPoints = async function(event, memberId) {
+                event.preventDefault();
+                
+                const member = members.find(m => m.id === memberId);
+                if (!member) {
+                    alert('Member not found.');
+                    return;
+                }
+
+                const pointsInput = event.target.querySelector('input[type="number"]');
+                const reasonInput = event.target.querySelector('input[type="text"]');
+                
+                const points = parseInt(pointsInput.value);
+                const reason = reasonInput.value;
+
+                if (!points || points <= 0) {
+                    alert('Please enter a valid number of points.');
+                    return;
+                }
+
+                if (!reason.trim()) {
+                    alert('Please enter a reason for the points.');
+                    return;
+                }
+
+                try {
+                    // Create points record (adjustment)
+                    const pointsRecord = {
+                        memberId: member.id,
+                        email: member.email,
+                        name: member.name,
+                        points: points,
+                        reason: reason,
+                        timestamp: new Date().toISOString()
+                    };
+                    await window.FirebaseDB.addPoints(pointsRecord);
+
+                    // Notify and refresh
+                    try { window.dispatchEvent(new Event('pointsDataChanged')); } catch (_) {}
+
+                    // Show success message
+                    showSuccess();
+
+                    // Reset form
+                    event.target.reset();
+
+                    // Update display
+                    // Reload to get fresh totals
+                    members = await window.FirebaseDB.getMemberPointsSummary();
+                    displayMembers(members);
+                    
+                } catch (error) {
+                    console.error('Error adding points:', error);
+                    alert('Failed to add points. Please try again.');
+                }
+            };
+
+            // Initial display
+            displayMembers(members);
+
+            // --- Selection State ---
+            let selectedIndexes = [];
+
+            function getSelectedMemberIndexes() {
+                return selectedIndexes;
+            }
+
+            function updateSelectAllCheckbox() {
+                const allCards = document.querySelectorAll('.member-card');
+                const selectAll = document.getElementById('selectAllCheckbox');
+                if (selectedIndexes.length === allCards.length && allCards.length > 0) {
+                    selectAll.checked = true;
+                } else {
+                    selectAll.checked = false;
+                }
+            }
+
+            // Card click selection logic
+            grid.addEventListener('click', (e) => {
+                const card = e.target.closest('.member-card');
+                if (card) {
+                    const index = parseInt(card.dataset.index);
+                    if (selectedIndexes.includes(index)) {
+                        selectedIndexes = selectedIndexes.filter(i => i !== index);
+                        card.classList.remove('selected');
+                    } else {
+                        selectedIndexes.push(index);
+                        card.classList.add('selected');
+                    }
+                    updateSelectAllCheckbox();
+                }
+            });
+
+            // Select All checkbox logic
+            document.getElementById('selectAllCheckbox').addEventListener('change', function() {
+                const allCards = document.querySelectorAll('.member-card');
+                if (this.checked) {
+                    selectedIndexes = Array.from(allCards).map(card => parseInt(card.dataset.index));
+                    allCards.forEach(card => card.classList.add('selected'));
+                } else {
+                    selectedIndexes = [];
+                    allCards.forEach(card => card.classList.remove('selected'));
+                }
+            });
+
+            // Batch Add Points button logic
+            document.getElementById('batchAddPointsBtn').addEventListener('click', async function() {
+                const indexes = getSelectedMemberIndexes();
+                const points = parseInt(document.getElementById('batchPointsInput').value);
+                const reason = document.getElementById('batchReasonInput').value;
+                
+                if (!points || points <= 0) {
+                    alert('Please enter a valid number of points.');
+                    return;
+                }
+                
+                if (!reason.trim()) {
+                    alert('Please enter a reason for the points.');
+                    return;
+                }
+                
+                if (indexes.length === 0) {
+                    alert('Please select at least one member.');
+                    return;
+                }
+
+                try {
+                    const membersToBatch = members.filter((_, index) => indexes.includes(index));
+                    
+                    // Add points for each selected member
+                    for (const member of membersToBatch) {
+                        // Add points record to Firebase
+                        await window.FirebaseDB.addPoints(member.id, points, reason);
+                        
+                        // Update member's total points
+                        const currentPoints = member.points || 0;
+                        const newPoints = currentPoints + points;
+                        await window.FirebaseDB.updateMemberPoints(member.id, newPoints);
+                        
+                        // Update local member data
+                        member.points = newPoints;
+                    }
+
+                    showSuccess();
+                    document.getElementById('batchPointsInput').value = '';
+                    document.getElementById('batchReasonInput').value = '';
+                    
+                    // Clear selection after batch
+                    selectedIndexes = [];
+                    document.querySelectorAll('.member-card').forEach(card => card.classList.remove('selected'));
+                    updateSelectAllCheckbox();
+                    displayMembers(members);
+                    
+                } catch (error) {
+                    console.error('Error adding batch points:', error);
+                    alert('Failed to add points. Please try again.');
+                }
+            });
+
+            // Listen for changes from other pages
+            window.addEventListener('storage', (e) => {
+                if (e.key === 'members') {
+                    // Reload members from Firebase when storage changes
+                    loadMembers();
+                }
+            });
+
+            // Function to reload members
+            async function loadMembers() {
+                try {
+                    members = await window.FirebaseDB.getMembers();
+                    displayMembers(members);
+                } catch (error) {
+                    console.error('Error reloading members:', error);
+                }
+            }
+
+            // Show success message function
+            function showSuccess() {
+                const successMessage = document.getElementById('successMessage');
+                if (successMessage) {
+                    successMessage.style.display = 'block';
+                    setTimeout(() => {
+                        successMessage.style.display = 'none';
+                    }, 3000);
+                }
+            }
+
+            // Listen for custom events
+            window.addEventListener('memberDataChanged', () => {
+                loadMembers();
+            });
+        });
+    </script>
+</body>
+</html> 

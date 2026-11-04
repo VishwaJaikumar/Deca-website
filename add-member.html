@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Add Member - Dashboard</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <script type="module" src="firebase-db.js"></script>
+  <script src="shared-sidebar.js"></script>
+
+  <style>
+    .form-container {
+      background: white;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      max-width: 800px;
+      margin: 20px auto;
+    }
+    .form-header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    .form-header h2 {
+      color: #1a73e8;
+      font-size: 24px;
+      margin-bottom: 10px;
+    }
+    .form-header p {
+      color: #666;
+      font-size: 16px;
+    }
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 20px;
+    }
+    .form-group {
+      margin-bottom: 20px;
+    }
+    .form-group.full-width {
+      grid-column: 1 / -1;
+    }
+    .form-group label {
+      display: block;
+      margin-bottom: 8px;
+      color: #333;
+      font-weight: 500;
+      font-size: 14px;
+    }
+    .form-group input,
+    .form-group select {
+      width: 100%;
+      padding: 12px;
+      border: 2px solid #e0e0e0;
+      border-radius: 8px;
+      font-size: 15px;
+      transition: border-color 0.3s, box-shadow 0.3s;
+    }
+    .form-group input:focus,
+    .form-group select:focus {
+      border-color: #1a73e8;
+      box-shadow: 0 0 0 3px rgba(26,115,232,0.1);
+      outline: none;
+    }
+    .form-group input::placeholder {
+      color: #999;
+    }
+    .form-group .help-text {
+      font-size: 12px;
+      color: #666;
+      margin-top: 4px;
+    }
+    .btn-submit {
+      background-color: #1a73e8;
+      color: white;
+      border: none;
+      padding: 14px 28px;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background-color 0.3s, transform 0.2s;
+      width: 100%;
+      margin-top: 20px;
+    }
+    .btn-submit:hover {
+      background-color: #1557b0;
+      transform: translateY(-1px);
+    }
+    .btn-submit:active {
+      transform: translateY(0);
+    }
+    .success-message {
+      background-color: #4caf50;
+      color: white;
+      padding: 15px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      display: none;
+      text-align: center;
+      animation: fadeIn 0.3s ease-in-out;
+    }
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(-10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    .required-field::after {
+      content: '*';
+      color: #dc3545;
+      margin-left: 4px;
+    }
+    .member-type-info {
+      background-color: #f8f9fa;
+      padding: 15px;
+      border-radius: 8px;
+      margin-top: 10px;
+      font-size: 14px;
+      color: #666;
+    }
+    .member-type-info ul {
+      margin: 10px 0 0 20px;
+      padding: 0;
+    }
+    .member-type-info li {
+      margin-bottom: 5px;
+    }
+  </style>
+</head>
+<body>
+  <main class="content">
+    <div class="form-container">
+      <div class="form-header">
+        <h2>Add New Member</h2>
+        <p>Fill in the details below to add a new member to the DECA chapter</p>
+      </div>
+      <div id="successMessage" class="success-message">
+        Member added successfully!
+      </div>
+      <form id="addMemberForm">
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="memberName" class="required-field">Full Name</label>
+            <input type="text" id="memberName" required placeholder="Enter member's full name">
+            <div class="help-text">Enter the member's first and last name</div>
+          </div>
+          <div class="form-group">
+            <label for="memberEmail" class="required-field">Email Address</label>
+            <input type="email" id="memberEmail" required placeholder="Enter member's email">
+            <div class="help-text">Use the member's school email address</div>
+          </div>
+          <div class="form-group">
+            <label for="memberEvent" class="required-field">DECA Event</label>
+            <select id="memberEvent" required>
+              <option value="">Select an event</option>
+              <option value="Business Administration Core">Business Administration Core</option>
+              <option value="Business Management and Administration">Business Management and Administration</option>
+              <option value="Entrepreneurship">Entrepreneurship</option>
+              <option value="Finance">Finance</option>
+              <option value="Hospitality and Tourism">Hospitality and Tourism</option>
+              <option value="Marketing">Marketing</option>
+              <option value="Personal Financial Literacy">Personal Financial Literacy</option>
+            </select>
+            <div class="help-text">Choose the member's primary DECA event</div>
+          </div>
+          <div class="form-group">
+            <label for="memberType" class="required-field">Member Type</label>
+            <select id="memberType" required>
+              <option value="">Select member type</option>
+              <option value="Active">Active Member</option>
+              <option value="Officer">Chapter Officer</option>
+              <option value="Advisor">Chapter Advisor</option>
+            </select>
+            <div class="help-text">Select the member's role in the chapter</div>
+          </div>
+          <div class="form-group full-width">
+            <div class="member-type-info">
+              <strong>Member Type Information:</strong>
+              <ul>
+                <li><strong>Active Member:</strong> Regular chapter member participating in DECA activities</li>
+                <li><strong>Chapter Officer:</strong> Elected leadership position in the chapter</li>
+                <li><strong>Chapter Advisor:</strong> Teacher or staff member overseeing the chapter</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+        <button type="submit" class="btn-submit">
+          <i class="fas fa-user-plus"></i> Add Member
+        </button>
+      </form>
+    </div>
+  </main>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const form = document.getElementById("addMemberForm");
+      const successMessage = document.getElementById("successMessage");
+
+      form.addEventListener("submit", async function (e) {
+        e.preventDefault();
+
+        const name = document.getElementById("memberName").value.trim();
+        const email = document.getElementById("memberEmail").value.trim();
+        const event = document.getElementById("memberEvent").value;
+        const type = document.getElementById("memberType").value;
+
+        if (!name || !email || !event || !type) {
+          alert("Please fill out all required fields.");
+          return;
+        }
+
+        try {
+          await window.FirebaseDB.addMember({
+            name,
+            email,
+            event,
+            type
+          });
+
+          successMessage.style.display = "block";
+          form.reset();
+
+          setTimeout(() => {
+            successMessage.style.display = "none";
+          }, 3000);
+        } catch (error) {
+          alert("Failed to add member. See console for details.");
+          console.error(error);
+        }
+      });
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minutes Reports - Dashboard</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script type="module" src="firebase-db.js"></script>
+    <script src="shared-sidebar.js"></script>
+
+    <style>
+        .reports-container {
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .page-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .page-header h1 {
+            color: #1a73e8;
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+        .page-header p {
+            color: #666;
+            font-size: 16px;
+        }
+        .reports-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .report-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .report-card h2 {
+            color: #333;
+            font-size: 18px;
+            margin: 0 0 15px 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .report-card h2 i {
+            color: #1a73e8;
+        }
+        .chart-container {
+            position: relative;
+            height: 200px;
+            margin-bottom: 15px;
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+        }
+        .stat-item {
+            text-align: center;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+        .stat-value {
+            font-size: 24px;
+            font-weight: 600;
+            color: #1a73e8;
+            margin-bottom: 5px;
+        }
+        .stat-label {
+            font-size: 12px;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .export-options {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        .export-btn {
+            padding: 8px 15px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            transition: all 0.3s ease;
+        }
+        .export-btn.pdf {
+            background: #dc3545;
+            color: white;
+        }
+        .export-btn.excel {
+            background: #28a745;
+            color: white;
+        }
+        .export-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .action-items-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .action-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+        }
+        .action-item:last-child {
+            border-bottom: none;
+        }
+        .action-item input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+        }
+        .action-item.completed {
+            color: #666;
+            text-decoration: line-through;
+        }
+        .member-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .member-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+        }
+        .member-item:last-child {
+            border-bottom: none;
+        }
+        .member-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .member-avatar {
+            width: 32px;
+            height: 32px;
+            background: #e3f2fd;
+            color: #1a73e8;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+        }
+        .member-hours {
+            font-weight: 600;
+            color: #1a73e8;
+        }
+        .date-range {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            align-items: center;
+            background: white;
+            padding: 15px;
+            border-radius: 12px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .date-input {
+            padding: 8px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        .date-input:focus {
+            border-color: #1a73e8;
+            outline: none;
+        }
+        .filter-btn {
+            padding: 8px 15px;
+            background: #1a73e8;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .filter-btn:hover {
+            background: #1557b0;
+        }
+        .preset-select {
+            padding: 8px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 14px;
+            min-width: 150px;
+            cursor: pointer;
+        }
+        .preset-select:focus {
+            border-color: #1a73e8;
+            outline: none;
+        }
+        .date-range-label {
+            color: #666;
+            font-size: 14px;
+            white-space: nowrap;
+        }
+        .date-range-divider {
+            color: #666;
+            font-size: 14px;
+        }
+        .no-data {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+            font-style: italic;
+            background: #f8f9fa;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+   
+    <main class="content">
+        <div class="reports-container">
+            <div class="page-header">
+                <h1>Minutes Reports</h1>
+                <p>View comprehensive reports and analytics for chapter activities</p>
+            </div>
+
+            <div class="date-range">
+                <select class="preset-select" id="presetRange" onchange="updateDateRange()">
+                    <option value="custom">Custom Range</option>
+                    <option value="today">Today</option>
+                    <option value="yesterday">Yesterday</option>
+                    <option value="last7">Last 7 Days</option>
+                    <option value="last30" selected>Last 30 Days</option>
+                    <option value="last90">Last 90 Days</option>
+                    <option value="thisMonth">This Month</option>
+                    <option value="lastMonth">Last Month</option>
+                    <option value="thisYear">This Year</option>
+                </select>
+                <span class="date-range-label">From</span>
+                <input type="date" class="date-input" id="startDate">
+                <span class="date-range-divider">to</span>
+                <input type="date" class="date-input" id="endDate">
+                <button class="filter-btn" onclick="updateReports()">
+                    <i class="fas fa-filter"></i> Apply Filter
+                </button>
+            </div>
+
+            <div class="reports-grid">
+                <!-- Time Summary Card -->
+                <div class="report-card">
+                    <h2><i class="fas fa-clock"></i> Time Summary</h2>
+                    <div class="chart-container">
+                        <canvas id="timeChart"></canvas>
+                    </div>
+                    <div class="stats-grid">
+                        <div class="stat-item">
+                            <div class="stat-value" id="totalHours">0</div>
+                            <div class="stat-label">Total Hours</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value" id="avgDuration">0</div>
+                            <div class="stat-label">Avg Duration</div>
+                        </div>
+                    </div>
+                    <div class="export-options">
+                        <button class="export-btn pdf" onclick="exportReport('pdf', 'time')">
+                            <i class="fas fa-file-pdf"></i> Export PDF
+                        </button>
+                        <button class="export-btn excel" onclick="exportReport('excel', 'time')">
+                            <i class="fas fa-file-excel"></i> Export Excel
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Member Activity Card -->
+                <div class="report-card">
+                    <h2><i class="fas fa-users"></i> Member Activity</h2>
+                    <div class="chart-container">
+                        <canvas id="memberChart"></canvas>
+                    </div>
+                    <ul class="member-list" id="memberList">
+                        <!-- Member items will be populated here -->
+                    </ul>
+                    <div class="export-options">
+                        <button class="export-btn pdf" onclick="exportReport('pdf', 'members')">
+                            <i class="fas fa-file-pdf"></i> Export PDF
+                        </button>
+                        <button class="export-btn excel" onclick="exportReport('excel', 'members')">
+                            <i class="fas fa-file-excel"></i> Export Excel
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Project Summary Card -->
+                <div class="report-card">
+                    <h2><i class="fas fa-project-diagram"></i> Project Summary</h2>
+                    <div class="chart-container">
+                        <canvas id="projectChart"></canvas>
+                    </div>
+                    <div class="stats-grid">
+                        <div class="stat-item">
+                            <div class="stat-value" id="totalProjects">0</div>
+                            <div class="stat-label">Total Projects</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value" id="activeProjects">0</div>
+                            <div class="stat-label">Active Projects</div>
+                        </div>
+                    </div>
+                    <div class="export-options">
+                        <button class="export-btn pdf" onclick="exportReport('pdf', 'projects')">
+                            <i class="fas fa-file-pdf"></i> Export PDF
+                        </button>
+                        <button class="export-btn excel" onclick="exportReport('excel', 'projects')">
+                            <i class="fas fa-file-excel"></i> Export Excel
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Action Items Card -->
+                <div class="report-card">
+                    <h2><i class="fas fa-tasks"></i> Action Items</h2>
+                    <div class="stats-grid">
+                        <div class="stat-item">
+                            <div class="stat-value" id="totalActions">0</div>
+                            <div class="stat-label">Total Items</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value" id="completedActions">0</div>
+                            <div class="stat-label">Completed</div>
+                        </div>
+                    </div>
+                    <ul class="action-items-list" id="actionItemsList">
+                        <!-- Action items will be populated here -->
+                    </ul>
+                    <div class="export-options">
+                        <button class="export-btn pdf" onclick="exportReport('pdf', 'actions')">
+                            <i class="fas fa-file-pdf"></i> Export PDF
+                        </button>
+                        <button class="export-btn excel" onclick="exportReport('excel', 'actions')">
+                            <i class="fas fa-file-excel"></i> Export Excel
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        
+
+        function updateReports() {
+            const minutes = JSON.parse(localStorage.getItem('minutes') || '[]');
+            const members = JSON.parse(localStorage.getItem('members') || '[]');
+
+            // Get date range from UI
+            const presetRange = document.getElementById('presetRange').value;
+            let startDate, endDate;
+            if (presetRange === 'custom') {
+                startDate = new Date(document.getElementById('startDate').value);
+                endDate = new Date(document.getElementById('endDate').value);
+                endDate.setHours(23, 59, 59, 999); // Include the entire end date
+            } else {
+                // Use the updateDateRange logic for presets
+                const today = new Date();
+                startDate = new Date();
+                endDate = new Date();
+                switch(presetRange) {
+                    case 'today':
+                        startDate = new Date(today);
+                        endDate = new Date(today);
+                        break;
+                    case 'yesterday':
+                        startDate = new Date(today);
+                        startDate.setDate(startDate.getDate() - 1);
+                        endDate = new Date(startDate);
+                        break;
+                    case 'last7':
+                        startDate = new Date(today);
+                        startDate.setDate(startDate.getDate() - 7);
+                        break;
+                    case 'last30':
+                        startDate = new Date(today);
+                        startDate.setDate(startDate.getDate() - 30);
+                        break;
+                    case 'last90':
+                        startDate = new Date(today);
+                        startDate.setDate(startDate.getDate() - 90);
+                        break;
+                    case 'thisMonth':
+                        startDate = new Date(today.getFullYear(), today.getMonth(), 1);
+                        endDate = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+                        break;
+                    case 'lastMonth':
+                        startDate = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+                        endDate = new Date(today.getFullYear(), today.getMonth(), 0);
+                        break;
+                    case 'thisYear':
+                        startDate = new Date(today.getFullYear(), 0, 1);
+                        endDate = new Date(today.getFullYear(), 11, 31);
+                        break;
+                    default:
+                        startDate = new Date(today);
+                        startDate.setDate(startDate.getDate() - 30);
+                }
+            }
+
+            // Filter minutes by date range
+            const filteredMinutes = minutes.filter(minute => {
+                const activityDate = new Date(minute.activityDate);
+                return activityDate >= startDate && activityDate <= endDate;
+            });
+
+            // Update all reports
+            updateTimeSummary(filteredMinutes);
+            updateProjectSummary(filteredMinutes);
+            updateMemberActivity(filteredMinutes, members);
+            updateActionItems(filteredMinutes);
+        }
+
+        function updateTimeSummary(minutes) {
+            // Calculate total hours and average duration
+            let totalHours = 0;
+            minutes.forEach(minute => {
+                if (minute.duration) {
+                    const [hours, mins] = minute.duration.split(':').map(Number);
+                    totalHours += hours + (mins / 60);
+                }
+            });
+            
+            const avgDuration = minutes.length ? totalHours / minutes.length : 0;
+            
+            document.getElementById('totalHours').textContent = totalHours.toFixed(1);
+            document.getElementById('avgDuration').textContent = avgDuration.toFixed(1);
+
+            // Destroy existing chart if it exists
+            const existingChart = Chart.getChart('timeChart');
+            if (existingChart) {
+                existingChart.destroy();
+            }
+
+            // Calculate hours for each activity type
+            const typeHours = {
+                meeting: calculateTypeHours(minutes, 'meeting'),
+                project: calculateTypeHours(minutes, 'project'),
+                competition: calculateTypeHours(minutes, 'competition'),
+                training: calculateTypeHours(minutes, 'training'),
+                other: calculateTypeHours(minutes, 'other')
+            };
+
+            // Update time distribution chart
+            const ctx = document.getElementById('timeChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Chapter Meeting', 'Project Work', 'Competition Prep', 'Training', 'Other'],
+                    datasets: [{
+                        label: 'Hours Spent',
+                        data: [
+                            typeHours.meeting,
+                            typeHours.project,
+                            typeHours.competition,
+                            typeHours.training,
+                            typeHours.other
+                        ],
+                        backgroundColor: '#1a73e8'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Hours'
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `${context.raw.toFixed(1)} hours`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function calculateTypeHours(minutes, type) {
+            return minutes
+                .filter(m => m.activityType === type && m.duration)
+                .reduce((total, m) => {
+                    const [hours, mins] = m.duration.split(':').map(Number);
+                    return total + hours + (mins / 60);
+                }, 0);
+        }
+
+        function updateMemberActivity(minutes, members) {
+            // Calculate member participation
+            const memberHours = {};
+            members.forEach(member => {
+                memberHours[member.email] = 0;
+            });
+
+            minutes.forEach(minute => {
+                if (minute.participants && minute.duration) {
+                    const [hours, mins] = minute.duration.split(':').map(Number);
+                    const durationHours = hours + (mins / 60);
+                    
+                    minute.participants.forEach(email => {
+                        if (memberHours[email] !== undefined) {
+                            memberHours[email] += durationHours;
+                        }
+                    });
+                }
+            });
+
+            // Update member list
+            const memberList = document.getElementById('memberList');
+            const sortedMembers = members
+                .map(member => ({
+                    ...member,
+                    hours: memberHours[member.email] || 0
+                }))
+                .sort((a, b) => b.hours - a.hours);
+
+            if (sortedMembers.length === 0) {
+                memberList.innerHTML = '<div class="no-data">No member activity in selected time period</div>';
+            } else {
+                memberList.innerHTML = sortedMembers
+                    .map(member => `
+                        <li class="member-item">
+                            <div class="member-info">
+                                <div class="member-avatar">
+                                    ${member.name.split(' ').map(n => n[0]).join('')}
+                                </div>
+                                <span>${member.name}</span>
+                            </div>
+                            <span class="member-hours">${member.hours.toFixed(1)}h</span>
+                        </li>
+                    `).join('');
+            }
+
+            // Destroy existing chart if it exists
+            const existingChart = Chart.getChart('memberChart');
+            if (existingChart) {
+                existingChart.destroy();
+            }
+
+            // Only create chart if there are members with hours
+            const membersWithHours = sortedMembers.filter(m => m.hours > 0);
+            if (membersWithHours.length > 0) {
+                const ctx = document.getElementById('memberChart').getContext('2d');
+                new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: membersWithHours.map(m => m.name),
+                        datasets: [{
+                            data: membersWithHours.map(m => m.hours),
+                            backgroundColor: [
+                                '#1a73e8',
+                                '#34a853',
+                                '#fbbc05',
+                                '#ea4335',
+                                '#4285f4'
+                            ]
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'right',
+                                labels: {
+                                    boxWidth: 12,
+                                    padding: 15
+                                }
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        return `${context.label}: ${context.raw.toFixed(1)} hours`;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            } else {
+                // Display "No Activity" message in the chart container
+                const chartContainer = document.getElementById('memberChart').parentElement;
+                chartContainer.innerHTML = `
+                    <div class="no-data">
+                        <i class="fas fa-users" style="font-size: 24px; color: #ccc; margin-bottom: 10px;"></i>
+                        <p>No member activity in selected time period</p>
+                    </div>
+                `;
+            }
+        }
+
+        function updateProjectSummary(minutes) {
+            // Count projects and active projects
+            const projects = new Set(minutes.map(m => m.activityName));
+            const activeProjects = new Set(minutes
+                .filter(m => m.actionItems.some(item => !item.completed))
+                .map(m => m.activityName));
+
+            document.getElementById('totalProjects').textContent = projects.size;
+            document.getElementById('activeProjects').textContent = activeProjects.size;
+
+            // Destroy existing chart if it exists
+            const existingChart = Chart.getChart('projectChart');
+            if (existingChart) {
+                existingChart.destroy();
+            }
+
+            // Only create chart if there are projects
+            if (projects.size > 0) {
+                const ctx = document.getElementById('projectChart').getContext('2d');
+                new Chart(ctx, {
+                    type: 'pie',
+                    data: {
+                        labels: ['Completed', 'Active'],
+                        datasets: [{
+                            data: [
+                                projects.size - activeProjects.size,
+                                activeProjects.size
+                            ],
+                            backgroundColor: ['#34a853', '#fbbc05']
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'right',
+                                labels: {
+                                    boxWidth: 12,
+                                    padding: 15
+                                }
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        return `${context.label}: ${context.raw} projects`;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            } else {
+                // Display "No Projects" message in the chart container
+                const chartContainer = document.getElementById('projectChart').parentElement;
+                chartContainer.innerHTML = `
+                    <div class="no-data">
+                        <i class="fas fa-project-diagram" style="font-size: 24px; color: #ccc; margin-bottom: 10px;"></i>
+                        <p>No projects in selected time period</p>
+                    </div>
+                `;
+            }
+        }
+
+        function updateActionItems(minutes) {
+            // Collect all action items
+            const allActionItems = minutes.flatMap(m => 
+                m.actionItems.map(item => ({
+                    ...item,
+                    project: m.activityName
+                }))
+            );
+
+            const totalItems = allActionItems.length;
+            const completedItems = allActionItems.filter(item => item.completed).length;
+
+            document.getElementById('totalActions').textContent = totalItems;
+            document.getElementById('completedActions').textContent = completedItems;
+
+            // Update action items list
+            const actionItemsList = document.getElementById('actionItemsList');
+            if (allActionItems.length === 0) {
+                actionItemsList.innerHTML = '<div class="no-data">No action items in selected time period</div>';
+            } else {
+                actionItemsList.innerHTML = allActionItems
+                    .sort((a, b) => a.completed - b.completed)
+                    .map(item => `
+                        <li class="action-item ${item.completed ? 'completed' : ''}">
+                            <input type="checkbox" ${item.completed ? 'checked' : ''} disabled>
+                            <span>${item.text}</span>
+                            <small style="color: #666; margin-left: auto;">${item.project}</small>
+                        </li>
+                    `).join('');
+            }
+        }
+
+        function exportReport(format, type) {
+            // This is a placeholder for the export functionality
+            // In a real implementation, you would generate and download the file
+            alert(`Exporting ${type} report as ${format.toUpperCase()}`);
+        }
+
+        function updateDateRange() {
+            const preset = document.getElementById('presetRange').value;
+            const startDateInput = document.getElementById('startDate');
+            const endDateInput = document.getElementById('endDate');
+            const today = new Date();
+            let startDate = new Date();
+            let endDate = new Date();
+
+            switch(preset) {
+                case 'today':
+                    startDate = new Date(today);
+                    endDate = new Date(today);
+                    break;
+                case 'yesterday':
+                    startDate = new Date(today);
+                    startDate.setDate(startDate.getDate() - 1);
+                    endDate = new Date(startDate);
+                    break;
+                case 'last7':
+                    startDate = new Date(today);
+                    startDate.setDate(startDate.getDate() - 7);
+                    break;
+                case 'last30':
+                    startDate = new Date(today);
+                    startDate.setDate(startDate.getDate() - 30);
+                    break;
+                case 'last90':
+                    startDate = new Date(today);
+                    startDate.setDate(startDate.getDate() - 90);
+                    break;
+                case 'thisMonth':
+                    startDate = new Date(today.getFullYear(), today.getMonth(), 1);
+                    endDate = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+                    break;
+                case 'lastMonth':
+                    startDate = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+                    endDate = new Date(today.getFullYear(), today.getMonth(), 0);
+                    break;
+                case 'thisYear':
+                    startDate = new Date(today.getFullYear(), 0, 1);
+                    endDate = new Date(today.getFullYear(), 11, 31);
+                    break;
+                case 'custom':
+                    // Don't change the dates for custom range
+                    return;
+            }
+
+            startDateInput.value = startDate.toISOString().split('T')[0];
+            endDateInput.value = endDate.toISOString().split('T')[0];
+            updateReports();
+        }
+    </script>
+</body>
+</html> 

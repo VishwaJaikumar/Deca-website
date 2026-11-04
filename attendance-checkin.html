@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meeting Check-in</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script type="module" src="firebase-db.js"></script>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #1a73e8 0%, #1557b0 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .checkin-container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            max-width: 500px;
+            width: 100%;
+            text-align: center;
+        }
+
+        .logo {
+            width: 80px;
+            height: 80px;
+            background: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            padding: 10px;
+        }
+
+        .logo img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        h1 {
+            color: #333;
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+
+        .meeting-info {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+            color: #666;
+        }
+
+        .meeting-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1a73e8;
+            text-transform: capitalize;
+        }
+
+        .meeting-date {
+            font-size: 14px;
+            margin-top: 5px;
+        }
+
+        .form-group {
+            margin: 30px 0;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 10px;
+            color: #1a73e8;
+            font-weight: 600;
+            font-size: 16px;
+        }
+
+        .name-input {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            background: #f8fafc;
+        }
+
+        .name-input:focus {
+            outline: none;
+            border-color: #1a73e8;
+            box-shadow: 0 0 0 3px rgba(26, 115, 232, 0.1);
+        }
+
+        .submit-btn {
+            background: linear-gradient(90deg, #1a73e8 0%, #34a853 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 10px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(26, 115, 232, 0.3);
+        }
+
+        .submit-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .message {
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+            font-weight: 600;
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .message.success {
+            background-color: #e8f5e8;
+            color: #2e7d32;
+            border: 2px solid #4caf50;
+        }
+
+        .message.error {
+            background-color: #ffebee;
+            color: #c62828;
+            border: 2px solid #f44336;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .loading {
+            display: none;
+            color: #666;
+            margin-top: 10px;
+        }
+
+        .spinner {
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .url-info {
+            background: rgba(102, 126, 234, 0.1);
+            border: 1px solid rgba(102, 126, 234, 0.2);
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 20px;
+            font-size: 12px;
+            color: #666;
+        }
+
+        .url-info strong {
+            color: #667eea;
+        }
+
+        @media (max-width: 600px) {
+            .checkin-container {
+                padding: 30px 20px;
+            }
+            
+            h1 {
+                font-size: 24px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="checkin-container">
+        <div class="logo">
+            <img src="GHS-Logo_Crest.png" alt="Glenn High School Logo">
+        </div>
+        
+        <h1>Meeting Check-in</h1>
+        
+        <div class="meeting-info">
+            <div class="meeting-title" id="meetingTitle">Loading...</div>
+            <div class="meeting-date" id="meetingDate"></div>
+        </div>
+
+        <div class="form-group">
+            <label for="nameInput">Enter Your Full Name</label>
+            <input 
+                type="text" 
+                id="nameInput" 
+                class="name-input"
+                placeholder="First Last"
+                autocomplete="off"
+                required
+            >
+        </div>
+
+        <button id="submitButton" class="submit-btn">
+            <i class="fas fa-check"></i>
+            Sign In
+        </button>
+
+        <div class="loading" id="loadingMessage">
+            <i class="fas fa-spinner spinner"></i>
+            Checking you in...
+        </div>
+
+        <div id="messageBox" class="message"></div>
+
+        <!-- Development helper - remove in production -->
+        <div class="url-info">
+            <strong>URL Parameters:</strong><br>
+            ?meeting=general&date=2025-08-22<br>
+            <small>Meeting types: general, officer, fundraising, competition, social, workshop</small>
+        </div>
+    </div>
+
+    <script>
+        // Meeting type configurations
+        const MEETING_TYPES = {
+            general: {
+                name: 'General Chapter Meeting',
+                location: 'Room 205'
+            },
+            officer: {
+                name: 'Officer Meeting',
+                location: 'Conference Room'
+            },
+            fundraising: {
+                name: 'Fundraising Committee',
+                location: 'Room 205'
+            },
+            competition: {
+                name: 'Competition Prep',
+                location: 'Room 205'
+            },
+            social: {
+                name: 'Social Event',
+                location: 'Various'
+            },
+            workshop: {
+                name: 'Workshop/Training',
+                location: 'Room 205'
+            }
+        };
+
+        // Global variables
+        let members = [];
+        let meetingType = 'general';
+        let meetingDate = new Date().toISOString().split('T')[0];
+
+        // DOM elements
+        const submitButton = document.getElementById("submitButton");
+        const nameInput = document.getElementById("nameInput");
+        const messageBox = document.getElementById("messageBox");
+        const loadingMessage = document.getElementById("loadingMessage");
+        const meetingTitle = document.getElementById("meetingTitle");
+        const meetingDateEl = document.getElementById("meetingDate");
+
+        // Parse URL parameters
+        function parseURLParameters() {
+            const urlParams = new URLSearchParams(window.location.search);
+            
+            // Get meeting type (default: general)
+            meetingType = urlParams.get('meeting') || 'general';
+            if (!MEETING_TYPES[meetingType]) {
+                meetingType = 'general'; // fallback to general if invalid
+            }
+            
+            // Get date (default: today)
+            const dateParam = urlParams.get('date');
+            if (dateParam && isValidDate(dateParam)) {
+                meetingDate = dateParam;
+            } else {
+                meetingDate = new Date().toISOString().split('T')[0];
+            }
+
+            // Optional: reset today's attendance limit via URL flag
+            const resetFlag = urlParams.get('reset');
+            const resetScope = urlParams.get('scope') || 'meeting'; // 'meeting' or 'all'
+            if (resetFlag === '1') {
+                // Fire and forget; will show an alert after completion
+                resetTodaysAttendance(resetScope).catch(err => console.error(err));
+            }
+        }
+
+        // Validate date format (YYYY-MM-DD)
+        function isValidDate(dateString) {
+            const regex = /^\d{4}-\d{2}-\d{2}$/;
+            if (!regex.test(dateString)) return false;
+            
+            const date = new Date(dateString + 'T00:00:00');
+            return date instanceof Date && !isNaN(date);
+        }
+
+        // Reset helper: deletes attendance for the current meeting/date
+        async function resetTodaysAttendance(scope = 'meeting') {
+            try {
+                const count = await window.FirebaseDB.deleteAttendanceByDateAndType(meetingDate, scope === 'all' ? null : meetingType);
+                // Let other pages refresh
+                try { window.dispatchEvent(new Event('attendanceDataChanged')); } catch (_) {}
+                try { window.dispatchEvent(new Event('pointsDataChanged')); } catch (_) {}
+                showMessage(`✅ Reset complete. Removed ${count} attendance record(s) for ${scope === 'all' ? 'all meetings' : MEETING_TYPES[meetingType].name} on ${meetingDate}.`, 'success');
+            } catch (e) {
+                showMessage('❌ Failed to reset today\'s attendance. Try again.', 'error');
+            }
+        }
+
+        // Update meeting display information
+        function updateMeetingInfo() {
+            const meetingConfig = MEETING_TYPES[meetingType];
+            
+            meetingTitle.textContent = meetingConfig.name;
+            
+            // Format date nicely
+            const date = new Date(meetingDate + 'T00:00:00');
+            meetingDateEl.textContent = date.toLocaleDateString('en-US', {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
+        }
+
+        // Load members from database
+        async function loadMembers() {
+            try {
+                members = await window.FirebaseDB.getMembers();
+                console.log(`Loaded ${members.length} members`);
+            } catch (error) {
+                console.error('Error loading members:', error);
+                showMessage("Unable to load member database. Please try again later.", "error");
+            }
+        }
+
+        // Check if member exists in database
+        function findMember(name) {
+            const normalizedInput = name.toLowerCase().trim();
+            return members.find(member => 
+                member.name.toLowerCase() === normalizedInput
+            );
+        }
+
+        // Check if member already signed in for this meeting
+        async function checkExistingAttendance(member) {
+            try {
+                const attendanceRecords = await window.FirebaseDB.getAttendanceRecords();
+                
+                return attendanceRecords.some(record => {
+                    if (record.date !== meetingDate || record.meetingType !== meetingType) {
+                        return false;
+                    }
+
+                    // Only consider new flattened records added by this form
+                    const recordName = (record.name || '').toLowerCase().trim();
+                    const recordEmail = (record.email || '').toLowerCase().trim();
+                    const recordMemberId = record.memberId || '';
+
+                    // Prefer strict memberId match when available
+                    const matchesById = !!member.id && !!recordMemberId && recordMemberId === member.id;
+                    // Safer fallback: require both name and email to match to avoid false positives
+                    const matchesByNameAndEmail = (!!recordName && !!recordEmail &&
+                        recordName === member.name.toLowerCase().trim() &&
+                        (!!member.email && recordEmail === member.email.toLowerCase().trim()));
+
+                    return matchesById || matchesByNameAndEmail;
+                });
+            } catch (error) {
+                console.error('Error checking existing attendance:', error);
+                return false;
+            }
+        }
+
+        // Record attendance and award points
+        async function markAttendance() {
+            const name = nameInput.value.trim();
+
+            if (!name) {
+                showMessage("Please enter your full name.", "error");
+                nameInput.focus();
+                return;
+            }
+
+            setLoading(true);
+
+            try {
+                // 1. Check if member exists
+                const member = findMember(name);
+                if (!member) {
+                    showMessage("Member not found. Please check your name spelling or contact an officer to be added to the system.", "error");
+                    setLoading(false);
+                    return;
+                }
+
+                // 2. Check for duplicate attendance
+                const alreadySignedIn = await checkExistingAttendance(member);
+                if (alreadySignedIn) {
+                    showMessage(`✅ ${name}, you have already signed in for this meeting!`, "warning");
+                    setLoading(false);
+                    clearForm();
+                    return;
+                }
+
+                // 3. Record attendance
+                // This is the CORRECT, flattened structure
+                const attendanceRecord = {
+                    date: meetingDate,
+                    meetingType: meetingType,
+                    meeting: meetingType, // for compatibility
+                    timestamp: new Date().toISOString(),
+                    name: member.name,          // Moved to the top level
+                    email: member.email || '',  // Moved to the top level
+                    memberId: member.id,        // Moved to the top level
+                    points: 1                   // Added points directly to the record
+                    };
+
+                await window.FirebaseDB.addAttendanceRecord(attendanceRecord);
+
+                // 4. Do NOT create a separate points record here.
+                // Points are now tracked via the attendance record itself (attendanceRecord.points)
+                // to avoid double-counting as adjustment points.
+                
+                // Notify other pages/views that points/attendance data changed
+                try { window.dispatchEvent(new Event('attendanceDataChanged')); } catch (_) {}
+                try { window.dispatchEvent(new Event('pointsDataChanged')); } catch (_) {}
+
+                showMessage(`✅ Welcome ${member.name}! You've been successfully signed in to the ${MEETING_TYPES[meetingType].name} and awarded 1 point.`, "success");
+                clearForm();
+
+            } catch (error) {
+                console.error("Error recording attendance:", error);
+                showMessage("❌ Failed to sign in. Please try again or contact an officer.", "error");
+            }
+
+            setLoading(false);
+        }
+
+        // UI Helper functions
+        function showMessage(text, type) {
+            messageBox.textContent = text;
+            messageBox.className = `message ${type}`;
+            messageBox.style.display = 'block';
+
+            // Auto-hide success and warning messages
+            if (type === 'success' || type === 'warning') {
+                setTimeout(() => {
+                    messageBox.style.display = 'none';
+                }, 5000);
+            }
+        }
+
+        function setLoading(isLoading) {
+            submitButton.disabled = isLoading;
+            nameInput.disabled = isLoading;
+            loadingMessage.style.display = isLoading ? 'block' : 'none';
+            
+            if (isLoading) {
+                submitButton.innerHTML = '<i class="fas fa-spinner spinner"></i> Signing In...';
+            } else {
+                submitButton.innerHTML = '<i class="fas fa-check"></i> Sign In';
+            }
+        }
+
+        function clearForm() {
+            setTimeout(() => {
+                nameInput.value = '';
+                nameInput.disabled = false;
+                nameInput.focus();
+            }, 2000);
+        }
+
+        // Event listeners
+        submitButton.addEventListener("click", markAttendance);
+
+        nameInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                markAttendance();
+            }
+        });
+
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', async () => {
+            parseURLParameters();
+            updateMeetingInfo();
+
+            // Wait for Firebase to be ready
+            if (!window.firebaseReady) {
+                await new Promise(resolve => 
+                    window.addEventListener('firebaseReady', resolve, { once: true })
+                );
+            }
+
+            await loadMembers();
+            
+            // Focus on input
+            nameInput.focus();
+        });
+    </script>
+</body>
+</html>

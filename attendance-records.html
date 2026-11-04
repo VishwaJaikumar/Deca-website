@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Attendance Records</title>
+  <link rel="stylesheet" href="styles.css"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"/>
+  <script type="module" src="firebase-db.js"></script>
+  <script src="shared-sidebar.js"></script>
+
+  <style>
+    .table-container {
+      background: white;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      max-width: 1200px;
+      margin: 20px auto;
+      overflow-x: auto;
+    }
+
+    .table-container h2 {
+      color: #1a73e8;
+      font-size: 24px;
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 15px;
+    }
+
+    thead {
+      background-color: #1a73e8;
+      color: white;
+    }
+
+    th, td {
+      padding: 14px 16px;
+      border-bottom: 1px solid #ddd;
+      text-align: left;
+    }
+
+    tr:hover {
+      background-color: #f1f1f1;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 20px;
+      color: #666;
+    }
+
+    .error {
+      text-align: center;
+      padding: 20px;
+      color: #e53935;
+    }
+
+    @media screen and (max-width: 768px) {
+      .table-container {
+        padding: 20px;
+      }
+
+      table, thead, tbody, th, td, tr {
+        font-size: 14px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="content">
+    <div class="table-container">
+      <h2>Attendance Log</h2>
+      <div id="loadingMessage" class="loading">Loading attendance records...</div>
+      <table id="attendanceTable" style="display: none;">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Member Name</th>
+            <th>Meeting</th>
+            <th>Points</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- Data from Firebase will populate here -->
+        </tbody>
+      </table>
+    </div>
+  </main>
+
+  <script>
+    async function loadAttendanceRecords() {
+      const loadingMessage = document.getElementById('loadingMessage');
+      const attendanceTable = document.getElementById('attendanceTable');
+      const tableBody = document.querySelector("#attendanceTable tbody");
+
+      try {
+        // Wait for firebase to be ready
+        if (!window.firebaseReady) {
+          await new Promise(resolve => window.addEventListener('firebaseReady', resolve, { once: true }));
+        }
+
+        // Get attendance records for valid members only
+        const records = await window.FirebaseDB.getMemberAttendanceRecords();
+        
+        // Hide loading message
+        loadingMessage.style.display = 'none';
+        
+        if (!records || records.length === 0) {
+          attendanceTable.style.display = 'table';
+          const row = document.createElement("tr");
+          const cell = document.createElement("td");
+          cell.colSpan = 4;
+          cell.textContent = "No attendance records found.";
+          cell.style.textAlign = 'center';
+          cell.style.padding = '20px';
+          row.appendChild(cell);
+          tableBody.appendChild(row);
+          return;
+        }
+
+        // Show table and populate data
+        attendanceTable.style.display = 'table';
+        
+        records.forEach(record => {
+          const row = document.createElement("tr");
+
+          const dateCell = document.createElement("td");
+          if (record.timestamp) {
+            const date = new Date(record.timestamp);
+            dateCell.textContent = date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+          } else {
+            dateCell.textContent = "N/A";
+          }
+
+          const nameCell = document.createElement("td");
+          nameCell.textContent = record.name || "Unknown";
+
+          const meetingCell = document.createElement("td");
+          meetingCell.textContent = record.meeting || "General Meeting";
+
+          const pointsCell = document.createElement("td");
+          pointsCell.textContent = record.points || "0";
+
+          row.appendChild(dateCell);
+          row.appendChild(nameCell);
+          row.appendChild(meetingCell);
+          row.appendChild(pointsCell);
+          tableBody.appendChild(row);
+        });
+
+      } catch (error) {
+        console.error("Failed to load attendance records:", error);
+        loadingMessage.innerHTML = '<div class="error">Error loading attendance records: ' + error.message + '</div>';
+      }
+    }
+
+    // Load records when page loads
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', loadAttendanceRecords);
+    } else {
+      loadAttendanceRecords();
+    }
+  </script>
+</body>
+</html>

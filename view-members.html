@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>View Members - Dashboard</title>
+  <link rel="stylesheet" href="styles.css" />
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+  />
+  <script src="shared-sidebar.js"></script>
+  <script type="module" src="firebase-db.js"></script>
+
+  <style>
+    /* Keep your existing CSS from before, plus these improvements */
+
+    /* Member card type border colors */
+    .member-card.active {
+      border-left: 5px solid #1a73e8;
+    }
+    .member-card.officer {
+      border-left: 5px solid #ffc107;
+    }
+    .member-card.advisor {
+      border-left: 5px solid #dc3545;
+    }
+
+    /* Member avatar circle with initials */
+    .member-avatar {
+      width: 50px;
+      height: 50px;
+      background: #e3f2fd;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-right: 15px;
+      color: #1a73e8;
+      font-size: 20px;
+      font-weight: 600;
+      user-select: none;
+      flex-shrink: 0;
+    }
+
+    /* Member status styling */
+    .member-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 12px;
+      background: #e8f5e8;
+      color: #2e7d32;
+      border-radius: 20px;
+      font-size: 14px;
+      font-weight: 500;
+    }
+
+    .member-status i {
+      color: #4caf50;
+    }
+  </style>
+</head>
+<body>
+  <main class="content">
+    <div class="members-container">
+      <div class="page-header">
+        <h1>Chapter Members</h1>
+        <p>View and manage all DECA chapter members</p>
+      </div>
+      <div class="search-bar">
+        <i class="fas fa-search"></i>
+        <input
+          type="text"
+          id="searchInput"
+          placeholder="Search members by name or email..."
+          autocomplete="off"
+        />
+      </div>
+      <div class="members-grid" id="membersGrid">
+        <!-- Member cards populated here -->
+      </div>
+    </div>
+  </main>
+
+
+
+
+
+
+  <script>
+    // Hold members in memory for filtering
+    let members = [];
+
+    const membersGrid = document.getElementById("membersGrid");
+    const searchInput = document.getElementById("searchInput");
+
+    // Utility: get initials from name for avatar
+    function getInitials(name) {
+      if (!name) return "";
+      const parts = name.trim().split(" ");
+      if (parts.length === 1) return parts[0][0].toUpperCase();
+      return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+    }
+
+    // Render member cards to DOM
+    function renderMembers(membersToRender) {
+      if (!membersToRender.length) {
+        membersGrid.innerHTML = '<p class="no-members">No members found.</p>';
+        return;
+      }
+
+      membersGrid.innerHTML = "";
+      membersToRender.forEach((member) => {
+        const card = document.createElement("div");
+        card.className = `member-card ${member.type.toLowerCase()}`;
+
+        card.innerHTML = `
+          <div class="member-header">
+            <div class="member-avatar">${getInitials(member.name)}</div>
+            <div class="member-info">
+              <h3 class="member-name">${member.name}</h3>
+              <p class="member-type">${member.type}</p>
+            </div>
+          </div>
+          <div class="member-details">
+            <div class="detail-item"><i class="fas fa-envelope"></i> ${member.email}</div>
+            <div class="detail-item"><i class="fas fa-clipboard-list"></i> ${member.event}</div>
+          </div>
+          <div class="member-actions">
+            <span class="member-status">
+              <i class="fas fa-user-check"></i> Active Member
+            </span>
+          </div>
+        `;
+
+        // No edit functionality - read-only view
+
+        membersGrid.appendChild(card);
+      });
+    }
+
+    // Filter members by search input
+    function filterMembers() {
+      const query = searchInput.value.toLowerCase().trim();
+      if (!query) {
+        renderMembers(members);
+        return;
+      }
+      const filtered = members.filter(
+        (m) =>
+          m.name.toLowerCase().includes(query) ||
+          m.email.toLowerCase().includes(query)
+      );
+      renderMembers(filtered);
+    }
+
+    // Load and render members from Firestore
+    async function loadMembers() {
+      try {
+        members = await window.FirebaseDB.getMembers();
+        filterMembers();
+      } catch (error) {
+        console.error("Error loading members:", error);
+        membersGrid.innerHTML =
+          '<p class="no-members">Failed to load members.</p>';
+      }
+    }
+
+    // Search input listener
+    searchInput.addEventListener("input", filterMembers);
+
+    // Initial load, wait for Firebase ready event if needed
+    if (window.firebaseReady) {
+      loadMembers();
+    } else {
+      window.addEventListener("firebaseReady", loadMembers);
+    }
+  </script>
+</body>
+</html>

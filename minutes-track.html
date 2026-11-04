@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Track Time - Dashboard</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script type="module" src="firebase-db.js"></script>
+    <script src="shared-sidebar.js"></script>
+
+    <style>
+        .track-container {
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .page-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .page-header h1 {
+            color: #1a73e8;
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+        .page-header p {
+            color: #666;
+            font-size: 16px;
+        }
+        .track-form {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        .form-group.full-width {
+            grid-column: 1 / -1;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 500;
+            font-size: 14px;
+        }
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 15px;
+            transition: all 0.3s ease;
+        }
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            border-color: #1a73e8;
+            box-shadow: 0 0 0 3px rgba(26,115,232,0.1);
+            outline: none;
+        }
+        .form-group textarea {
+            resize: vertical;
+            min-height: 120px;
+        }
+        .time-inputs {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+        .time-select {
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            min-width: 120px;
+            cursor: pointer;
+            background: white;
+        }
+        .time-select:focus {
+            border-color: #1a73e8;
+            outline: none;
+        }
+        .duration-display {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            margin-top: 10px;
+        }
+        .duration-value {
+            font-size: 24px;
+            font-weight: 600;
+            color: #1a73e8;
+        }
+        .duration-label {
+            font-size: 12px;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .participants-section {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 12px;
+            margin-top: 20px;
+        }
+        .participants-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .participants-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+            max-height: 300px;
+            overflow-y: auto;
+            padding: 10px;
+        }
+        .participant-card {
+            background: white;
+            padding: 12px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+        .participant-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .participant-card.selected {
+            border-color: #1a73e8;
+            background: #e8f0fe;
+        }
+        .participant-avatar {
+            width: 32px;
+            height: 32px;
+            background: #e3f2fd;
+            color: #1a73e8;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+        }
+        .participant-info {
+            flex: 1;
+        }
+        .participant-name {
+            font-weight: 500;
+            color: #333;
+        }
+        .selected-count {
+            background: #1a73e8;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+        }
+        .search-participants {
+            position: relative;
+            margin-bottom: 15px;
+        }
+        .search-participants input {
+            width: 100%;
+            padding: 10px 15px;
+            padding-left: 35px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+        .search-participants i {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #666;
+        }
+        .submit-btn {
+            background-color: #1a73e8;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        .submit-btn:hover {
+            background-color: #1557b0;
+            transform: translateY(-1px);
+        }
+        .submit-btn:active {
+            transform: translateY(0);
+        }
+        .success-message {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #4caf50;
+            color: white;
+            padding: 15px 25px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            display: none;
+            animation: slideIn 0.3s ease-out;
+            z-index: 1000;
+        }
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        .loading-message {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+
+    
+    <main class="content">
+        <div class="track-container">
+            <div class="page-header">
+                <h1>Track Time</h1>
+                <p>Record meeting minutes and track activity time for DECA chapter events</p>
+            </div>
+
+            <form id="trackForm" class="track-form">
+                <div class="form-grid">
+                    <div class="form-group full-width">
+                        <label for="activityType">Meeting Type</label>
+                        <select id="activityType" required>
+                            <option value="">Select type...</option>
+                            <option value="chapter">Chapter Meeting</option>
+                            <option value="competition">Competition Meeting</option>
+                            <option value="officer">Officer Meeting</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="activityDate">Date</label>
+                        <input type="date" id="activityDate" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Time</label>
+                        <div class="time-inputs">
+                            <select class="time-select" id="startTime" required>
+                                <option value="">Start Time</option>
+                            </select>
+                            <span>to</span>
+                            <select class="time-select" id="endTime" required>
+                                <option value="">End Time</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group full-width">
+                        <div class="duration-display">
+                            <div class="duration-value" id="duration">0:00</div>
+                            <div class="duration-label">Duration</div>
+                        </div>
+                    </div>
+
+                    <div class="form-group full-width">
+                        <label for="purpose">Purpose/Agenda</label>
+                        <textarea id="purpose" required placeholder="Enter the purpose and agenda for this meeting/activity"></textarea>
+                    </div>
+
+                    <div class="form-group full-width">
+                        <label>Participants</label>
+                        <div class="participants-section">
+                            <div class="participants-header">
+                                <h3>Select Participants</h3>
+                                <span class="selected-count" id="selectedCount">0 selected</span>
+                            </div>
+                            <div class="search-participants">
+                                <i class="fas fa-search"></i>
+                                <input type="text" id="participantSearch" placeholder="Search participants...">
+                            </div>
+                            <div class="participants-grid" id="participantsGrid">
+                                <div class="loading-message">Loading members...</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group full-width">
+                        <label for="notes">Meeting Notes</label>
+                        <textarea id="notes" placeholder="Enter detailed notes from the meeting/activity"></textarea>
+                    </div>
+                </div>
+
+                <button type="submit" class="submit-btn" id="submitBtn">
+                    <i class="fas fa-save"></i> Save Minutes
+                </button>
+            </form>
+        </div>
+    </main>
+
+    <div id="successMessage" class="success-message">
+        Minutes saved successfully!
+    </div>
+
+    <script>
+        let members = []; // Store members globally
+        let editIndex = null;
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            console.log('DOM loaded, initializing...');
+            
+            // Initialize time selects immediately
+            initializeTimeSelects();
+            
+            // Check for edit param
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.has('edit')) {
+                editIndex = parseInt(urlParams.get('edit'));
+                console.log('Edit mode for index:', editIndex);
+            }
+            
+            // Wait for Firebase to be ready
+            if (window.firebaseReady) {
+                await initializeApp();
+            } else {
+                window.addEventListener('firebaseReady', initializeApp);
+            }
+
+            // Form submission
+            const trackForm = document.getElementById('trackForm');
+            trackForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                saveMinutes(editIndex);
+            });
+
+            // Search functionality
+            document.getElementById('participantSearch').addEventListener('input', () => {
+                displayParticipants(members);
+            });
+
+            // Time change listeners
+            ['startTime', 'endTime'].forEach(id => {
+                document.getElementById(id).addEventListener('change', calculateDuration);
+            });
+        });
+
+        async function initializeApp() {
+            console.log('Firebase ready, loading members...');
+            try {
+                members = await window.FirebaseDB.getMembers();
+                console.log('Loaded members:', members);
+                displayParticipants(members);
+                
+                // If in edit mode, populate form
+                if (editIndex !== null) {
+                    await loadEditData();
+                }
+            } catch (error) {
+                console.error('Error initializing app:', error);
+                document.getElementById('participantsGrid').innerHTML = 
+                    '<div class="loading-message">Error loading members</div>';
+            }
+        }
+
+        async function loadEditData() {
+            try {
+                const minutes = await window.FirebaseDB.getMinutes();
+                const entry = minutes[editIndex];
+                if (entry) {
+                    console.log('Loading edit data:', entry);
+                    document.getElementById('activityType').value = entry.activityType || '';
+                    document.getElementById('activityDate').value = entry.activityDate || '';
+                    document.getElementById('startTime').value = entry.startTime || '';
+                    document.getElementById('endTime').value = entry.endTime || '';
+                    document.getElementById('purpose').value = entry.purpose || '';
+                    document.getElementById('notes').value = entry.notes || '';
+                    calculateDuration();
+                    
+                    // Pre-select participants
+                    setTimeout(() => {
+                        if (entry.participants && Array.isArray(entry.participants)) {
+                            document.querySelectorAll('.participant-card').forEach(card => {
+                                if (entry.participants.includes(card.dataset.email)) {
+                                    card.classList.add('selected');
+                                }
+                            });
+                            updateSelectedCount();
+                        }
+                    }, 100);
+                }
+            } catch (error) {
+                console.error('Error loading edit data:', error);
+            }
+        }
+
+        function initializeTimeSelects() {
+            const startSelect = document.getElementById('startTime');
+            const endSelect = document.getElementById('endTime');
+            
+            // Clear existing options
+            startSelect.innerHTML = '<option value="">Start Time</option>';
+            endSelect.innerHTML = '<option value="">End Time</option>';
+            
+            // Generate time options (30-minute intervals)
+            for (let hour = 0; hour < 24; hour++) {
+                for (let minute = 0; minute < 60; minute += 30) {
+                    const time = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+                    const displayTime = new Date(`2000-01-01T${time}`).toLocaleTimeString([], { 
+                        hour: 'numeric', 
+                        minute: '2-digit',
+                        hour12: true 
+                    });
+                    
+                    startSelect.add(new Option(displayTime, time));
+                    endSelect.add(new Option(displayTime, time));
+                }
+            }
+
+            // Set default times if not in edit mode
+            if (editIndex === null) {
+                const now = new Date();
+                const currentHour = now.getHours();
+                const currentMinute = Math.floor(now.getMinutes() / 30) * 30;
+                
+                const startTime = `${currentHour.toString().padStart(2, '0')}:${currentMinute.toString().padStart(2, '0')}`;
+                const endTime = `${(currentHour + 1).toString().padStart(2, '0')}:${currentMinute.toString().padStart(2, '0')}`;
+                
+                startSelect.value = startTime;
+                endSelect.value = endTime;
+
+                // Set default date to today
+                document.getElementById('activityDate').valueAsDate = new Date();
+                
+                // Calculate initial duration
+                calculateDuration();
+            }
+        }
+
+        function displayParticipants(membersToDisplay) {
+            const grid = document.getElementById('participantsGrid');
+            const searchTerm = document.getElementById('participantSearch').value.toLowerCase();
+            
+            if (!membersToDisplay || membersToDisplay.length === 0) {
+                grid.innerHTML = '<div class="loading-message">No members found</div>';
+                return;
+            }
+            
+            const filteredMembers = membersToDisplay.filter(member => 
+                member.name.toLowerCase().includes(searchTerm) || 
+                member.email.toLowerCase().includes(searchTerm)
+            );
+
+            if (filteredMembers.length === 0) {
+                grid.innerHTML = '<div class="loading-message">No members match your search</div>';
+                return;
+            }
+
+            grid.innerHTML = filteredMembers.map(member => `
+                <div class="participant-card" data-email="${member.email}">
+                    <div class="participant-avatar">
+                        ${member.name.split(' ').map(n => n[0]).join('').toUpperCase()}
+                    </div>
+                    <div class="participant-info">
+                        <div class="participant-name">${member.name}</div>
+                    </div>
+                </div>
+            `).join('');
+
+            // Add click handlers
+            document.querySelectorAll('.participant-card').forEach(card => {
+                card.addEventListener('click', () => {
+                    card.classList.toggle('selected');
+                    updateSelectedCount();
+                });
+            });
+        }
+
+        function updateSelectedCount() {
+            const selected = document.querySelectorAll('.participant-card.selected').length;
+            document.getElementById('selectedCount').textContent = `${selected} selected`;
+        }
+
+        function calculateDuration() {
+            const startTime = document.getElementById('startTime').value;
+            const endTime = document.getElementById('endTime').value;
+            let durationText = '0:00';
+            
+            if (startTime && endTime) {
+                const start = new Date(`2000-01-01T${startTime}`);
+                const end = new Date(`2000-01-01T${endTime}`);
+                let duration = (end - start) / 60000; // duration in minutes
+                
+                if (duration < 0) duration += 24 * 60; // handle overnight
+                
+                const hours = Math.floor(duration / 60);
+                const minutes = Math.floor(duration % 60);
+                durationText = `${hours}:${minutes.toString().padStart(2, '0')}`;
+            }
+            
+            document.getElementById('duration').textContent = durationText;
+            return durationText;
+        }
+
+        async function saveMinutes(editIndex) {
+            console.log('Saving minutes...');
+            
+            // Validate required fields
+            const activityDate = document.getElementById('activityDate').value;
+            const startTime = document.getElementById('startTime').value;
+            const endTime = document.getElementById('endTime').value;
+            const activityType = document.getElementById('activityType').value;
+            const purpose = document.getElementById('purpose').value;
+            
+            if (!activityDate || !startTime || !endTime || !activityType || !purpose) {
+                alert('Please fill in all required fields.');
+                return;
+            }
+            
+            // Disable submit button
+            const submitBtn = document.getElementById('submitBtn');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+            submitBtn.disabled = true;
+            
+            const startDateTime = new Date(activityDate + 'T' + startTime).toISOString();
+            const duration = calculateDuration();
+            
+            const formData = {
+                activityType: activityType,
+                activityDate: activityDate,
+                startTime: startTime,
+                endTime: endTime,
+                startDateTime: startDateTime,
+                duration: duration,
+                purpose: purpose,
+                notes: document.getElementById('notes').value,
+                participants: Array.from(document.querySelectorAll('.participant-card.selected'))
+                    .map(card => card.dataset.email)
+            };
+
+            try {
+                if (typeof editIndex === 'number' && !isNaN(editIndex)) {
+                    // For editing - you'll need to implement updateMinutes in firebase-db.js
+                    alert('Edit functionality needs to be implemented with Firebase updateMinutes method');
+                } else {
+                    // Add new entry
+                    await window.FirebaseDB.addMinutes(formData);
+                    console.log('Minutes saved successfully');
+                }
+                
+                // Show success message
+                const successMessage = document.getElementById('successMessage');
+                successMessage.style.display = 'block';
+                setTimeout(() => {
+                    successMessage.style.display = 'none';
+                }, 3000);
+                
+                // Reset form if not editing
+                if (editIndex === null) {
+                    document.getElementById('trackForm').reset();
+                    initializeTimeSelects();
+                    displayParticipants(members);
+                    updateSelectedCount();
+                }
+                
+            } catch (error) {
+                console.error('Error saving minutes:', error);
+                alert('Error saving minutes. Please try again.');
+            } finally {
+                // Re-enable submit button
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,19 @@
+# Editor / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Firebase local state
+.firebase/
+firebase-debug.log*
+*.log
+
+# Secrets: never commit these
+.env
+.env.*
+serviceAccount*.json
+*-firebase-adminsdk-*.json
+
+# Dependencies (if you add a build step later)
+node_modules/

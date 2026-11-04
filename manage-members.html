@@ -1,0 +1,1103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Manage Members - Admin Dashboard</title>
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+  <script src="shared-sidebar.js"></script>
+  <script type="module" src="firebase-db.js"></script>
+
+  <style>
+    .manage-container {
+      padding: 30px;
+      max-width: 1400px;
+      margin: 0 auto;
+      background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+      min-height: 100vh;
+    }
+
+    .page-header {
+      text-align: center;
+      margin-bottom: 40px;
+      background: linear-gradient(135deg, #1a73e8, #0d47a1);
+      color: white;
+      padding: 40px 30px;
+      border-radius: 20px;
+      box-shadow: 0 10px 30px rgba(26, 115, 232, 0.3);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .page-header::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      right: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+      animation: float 6s ease-in-out infinite;
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0px) rotate(0deg); }
+      50% { transform: translateY(-20px) rotate(180deg); }
+    }
+
+    .page-header h1 {
+      font-size: 2.8rem;
+      margin-bottom: 15px;
+      font-weight: 700;
+      position: relative;
+      z-index: 1;
+    }
+
+    .page-header p {
+      font-size: 1.2rem;
+      opacity: 0.95;
+      position: relative;
+      z-index: 1;
+    }
+
+    .controls-section {
+      background: white;
+      padding: 25px;
+      border-radius: 15px;
+      box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
+      margin-bottom: 30px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 20px;
+    }
+
+    .search-bar {
+      flex: 1;
+      max-width: 450px;
+      position: relative;
+    }
+
+    .search-bar input {
+      width: 100%;
+      padding: 15px 20px 15px 50px;
+      border: 2px solid #e2e8f0;
+      border-radius: 12px;
+      font-size: 16px;
+      transition: all 0.3s ease;
+      background: #f8fafc;
+    }
+
+    .search-bar input:focus {
+      border-color: #1a73e8;
+      box-shadow: 0 0 0 4px rgba(26, 115, 232, 0.1);
+      outline: none;
+      background: white;
+    }
+
+    .search-bar i {
+      position: absolute;
+      left: 18px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #64748b;
+      font-size: 18px;
+    }
+
+    .filter-buttons {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .filter-btn {
+      padding: 12px 20px;
+      border: 2px solid #e2e8f0;
+      border-radius: 10px;
+      background: white;
+      color: #64748b;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-size: 14px;
+      font-weight: 600;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .filter-btn::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(26, 115, 232, 0.1), transparent);
+      transition: left 0.5s;
+    }
+
+    .filter-btn:hover::before {
+      left: 100%;
+    }
+
+    .filter-btn:hover, .filter-btn.active {
+      background: #1a73e8;
+      color: white;
+      border-color: #1a73e8;
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(26, 115, 232, 0.3);
+    }
+
+    .add-member-btn {
+      background: linear-gradient(135deg, #34a853, #2e7d32);
+      color: white;
+      border: none;
+      padding: 15px 28px;
+      border-radius: 12px;
+      cursor: pointer;
+      font-size: 16px;
+      font-weight: 600;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      box-shadow: 0 6px 20px rgba(52, 168, 83, 0.3);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .add-member-btn::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+      transition: left 0.5s;
+    }
+
+    .add-member-btn:hover::before {
+      left: 100%;
+    }
+
+    .add-member-btn:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 25px rgba(52, 168, 83, 0.4);
+    }
+
+    .members-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+      gap: 25px;
+      margin-top: 20px;
+    }
+
+    .member-card {
+      background: white;
+      border-radius: 18px;
+      padding: 30px;
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+      transition: all 0.4s ease;
+      border: 1px solid #f1f5f9;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .member-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 5px;
+      background: linear-gradient(90deg, #1a73e8, #34a853);
+      transform: scaleX(0);
+      transition: transform 0.3s ease;
+    }
+
+    .member-card:hover::before {
+      transform: scaleX(1);
+    }
+
+    .member-card.active::before {
+      background: linear-gradient(90deg, #1a73e8, #4285f4);
+    }
+
+    .member-card.officer::before {
+      background: linear-gradient(90deg, #ffc107, #ff9800);
+    }
+
+    .member-card.advisor::before {
+      background: linear-gradient(90deg, #dc3545, #f44336);
+    }
+
+    .member-card:hover {
+      transform: translateY(-8px);
+      box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15);
+    }
+
+    .member-header {
+      display: flex;
+      align-items: center;
+      margin-bottom: 25px;
+    }
+
+    .member-avatar {
+      width: 70px;
+      height: 70px;
+      background: linear-gradient(135deg, #e3f2fd, #bbdefb);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-right: 20px;
+      color: #1a73e8;
+      font-size: 28px;
+      font-weight: 700;
+      box-shadow: 0 6px 20px rgba(26, 115, 232, 0.2);
+      position: relative;
+    }
+
+    .member-avatar::after {
+      content: '';
+      position: absolute;
+      top: -2px;
+      left: -2px;
+      right: -2px;
+      bottom: -2px;
+      background: linear-gradient(45deg, #1a73e8, #34a853);
+      border-radius: 50%;
+      z-index: -1;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .member-card:hover .member-avatar::after {
+      opacity: 1;
+    }
+
+    .member-info {
+      flex: 1;
+    }
+
+    .member-info h3 {
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: #1e293b;
+      margin: 0 0 8px 0;
+      line-height: 1.2;
+    }
+
+    .member-type {
+      display: inline-block;
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .member-type::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+      transition: left 0.5s;
+    }
+
+    .member-type:hover::before {
+      left: 100%;
+    }
+
+    .member-type.active {
+      background: linear-gradient(135deg, #e3f2fd, #bbdefb);
+      color: #1a73e8;
+    }
+
+    .member-type.officer {
+      background: linear-gradient(135deg, #fff3e0, #ffe0b2);
+      color: #ff9800;
+    }
+
+    .member-type.advisor {
+      background: linear-gradient(135deg, #ffebee, #ffcdd2);
+      color: #f44336;
+    }
+
+    .member-details {
+      margin-bottom: 25px;
+      background: #f8fafc;
+      padding: 20px;
+      border-radius: 12px;
+      border: 1px solid #e2e8f0;
+    }
+
+    .detail-item {
+      display: flex;
+      align-items: center;
+      margin-bottom: 12px;
+      color: #475569;
+      font-size: 14px;
+      font-weight: 500;
+    }
+
+    .detail-item:last-child {
+      margin-bottom: 0;
+    }
+
+    .detail-item i {
+      width: 24px;
+      margin-right: 12px;
+      color: #1a73e8;
+      font-size: 16px;
+      text-align: center;
+    }
+
+    .member-actions {
+      display: flex;
+      gap: 12px;
+      justify-content: flex-end;
+    }
+
+    .action-btn {
+      padding: 10px 18px;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .action-btn::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+      transition: left 0.5s;
+    }
+
+    .action-btn:hover::before {
+      left: 100%;
+    }
+
+    .btn-edit {
+      background: linear-gradient(135deg, #1a73e8, #0d47a1);
+      color: white;
+    }
+
+    .btn-edit:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(26, 115, 232, 0.4);
+    }
+
+    .btn-delete {
+      background: linear-gradient(135deg, #dc3545, #c82333);
+      color: white;
+    }
+
+    .btn-delete:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(220, 53, 69, 0.4);
+    }
+
+    .no-members {
+      text-align: center;
+      padding: 80px 20px;
+      color: #64748b;
+      font-size: 18px;
+      background: white;
+      border-radius: 18px;
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+      border: 2px dashed #e2e8f0;
+    }
+
+    .no-members i {
+      font-size: 64px;
+      color: #cbd5e1;
+      margin-bottom: 20px;
+      display: block;
+    }
+
+    /* Modal Styles */
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 1000;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(8px);
+    }
+
+    .modal-content {
+      background: white;
+      margin: 3% auto;
+      padding: 0;
+      border-radius: 20px;
+      width: 90%;
+      max-width: 550px;
+      box-shadow: 0 25px 80px rgba(0, 0, 0, 0.4);
+      animation: modalSlideIn 0.4s ease;
+      overflow: hidden;
+    }
+
+    @keyframes modalSlideIn {
+      from {
+        opacity: 0;
+        transform: translateY(-60px) scale(0.95);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    .modal-header {
+      background: linear-gradient(135deg, #1a73e8, #0d47a1);
+      color: white;
+      padding: 30px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .modal-header::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      right: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+      animation: float 8s ease-in-out infinite;
+    }
+
+    .modal-header h2 {
+      margin: 0;
+      font-size: 1.6rem;
+      font-weight: 700;
+      position: relative;
+      z-index: 1;
+    }
+
+    .close-modal {
+      background: rgba(255, 255, 255, 0.1);
+      border: none;
+      color: white;
+      font-size: 20px;
+      cursor: pointer;
+      padding: 8px;
+      width: 36px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      transition: all 0.3s ease;
+      position: relative;
+      z-index: 1;
+    }
+
+    .close-modal:hover {
+      background-color: rgba(255, 255, 255, 0.2);
+      transform: rotate(90deg);
+    }
+
+    .modal-form {
+      padding: 35px;
+    }
+
+    .form-group {
+      margin-bottom: 25px;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 10px;
+      font-weight: 600;
+      color: #1e293b;
+      font-size: 14px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .form-group input,
+    .form-group select {
+      width: 100%;
+      padding: 15px 18px;
+      border: 2px solid #e2e8f0;
+      border-radius: 12px;
+      font-size: 16px;
+      transition: all 0.3s ease;
+      box-sizing: border-box;
+      background: #f8fafc;
+    }
+
+    .form-group input:focus,
+    .form-group select:focus {
+      border-color: #1a73e8;
+      box-shadow: 0 0 0 4px rgba(26, 115, 232, 0.1);
+      outline: none;
+      background: white;
+    }
+
+    .form-actions {
+      display: flex;
+      gap: 15px;
+      justify-content: flex-end;
+      margin-top: 35px;
+      padding-top: 25px;
+      border-top: 2px solid #f1f5f9;
+    }
+
+    .btn-secondary {
+      background: linear-gradient(135deg, #64748b, #475569);
+      color: white;
+      border: none;
+      padding: 14px 26px;
+      border-radius: 12px;
+      cursor: pointer;
+      font-size: 16px;
+      font-weight: 600;
+      transition: all 0.3s ease;
+    }
+
+    .btn-secondary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(100, 116, 139, 0.3);
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #1a73e8, #0d47a1);
+      color: white;
+      border: none;
+      padding: 14px 26px;
+      border-radius: 12px;
+      cursor: pointer;
+      font-size: 16px;
+      font-weight: 600;
+      transition: all 0.3s ease;
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(26, 115, 232, 0.4);
+    }
+
+    .btn-danger {
+      background: linear-gradient(135deg, #dc3545, #c82333);
+      color: white;
+      border: none;
+      padding: 14px 26px;
+      border-radius: 12px;
+      cursor: pointer;
+      font-size: 16px;
+      font-weight: 600;
+      transition: all 0.3s ease;
+    }
+
+    .btn-danger:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(220, 53, 69, 0.4);
+    }
+
+    /* Delete Confirmation Modal */
+    .delete-modal {
+      display: none;
+      position: fixed;
+      z-index: 1001;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(8px);
+    }
+
+    .delete-modal-content {
+      background: white;
+      margin: 8% auto;
+      padding: 40px;
+      border-radius: 20px;
+      width: 90%;
+      max-width: 450px;
+      text-align: center;
+      box-shadow: 0 25px 80px rgba(0, 0, 0, 0.4);
+      animation: modalSlideIn 0.4s ease;
+    }
+
+    .delete-modal-content h2 {
+      color: #dc3545;
+      margin-bottom: 20px;
+      font-size: 1.8rem;
+      font-weight: 700;
+    }
+
+    .delete-modal-content p {
+      color: #64748b;
+      margin-bottom: 35px;
+      line-height: 1.7;
+      font-size: 16px;
+    }
+
+    .delete-modal-actions {
+      display: flex;
+      gap: 15px;
+      justify-content: center;
+    }
+
+    /* Responsive Design */
+    @media (max-width: 768px) {
+      .manage-container {
+        padding: 20px;
+      }
+
+      .page-header h1 {
+        font-size: 2.2rem;
+      }
+
+      .controls-section {
+        flex-direction: column;
+        align-items: stretch;
+        padding: 20px;
+      }
+
+      .search-bar {
+        max-width: none;
+      }
+
+      .members-grid {
+        grid-template-columns: 1fr;
+        gap: 20px;
+      }
+
+      .member-card {
+        padding: 25px;
+      }
+
+      .modal-content {
+        width: 95%;
+        margin: 5% auto;
+      }
+
+      .form-actions {
+        flex-direction: column;
+      }
+
+      .delete-modal-actions {
+        flex-direction: column;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="content">
+    <div class="manage-container">
+      <div class="page-header">
+        <h1><i class="fas fa-users-cog"></i> Manage Members</h1>
+        <p>Edit, update, and manage all DECA chapter members</p>
+      </div>
+
+      <div class="controls-section">
+        <div class="search-bar">
+          <i class="fas fa-search"></i>
+          <input type="text" id="searchInput" placeholder="Search members by name or email..." />
+        </div>
+
+        <div class="filter-buttons">
+          <button class="filter-btn active" data-filter="all">All Members</button>
+          <button class="filter-btn" data-filter="active">Active</button>
+          <button class="filter-btn" data-filter="officer">Officers</button>
+          <button class="filter-btn" data-filter="advisor">Advisors</button>
+        </div>
+
+        <button class="add-member-btn" onclick="window.location.href='add-member.html'">
+          <i class="fas fa-plus"></i> Add Member
+        </button>
+      </div>
+
+      <div class="members-grid" id="membersGrid">
+        <!-- Member cards will be populated here -->
+      </div>
+    </div>
+  </main>
+
+  <!-- Edit Member Modal -->
+  <div id="editModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2><i class="fas fa-edit"></i> Edit Member</h2>
+        <button class="close-modal" onclick="closeEditModal()">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <form id="editMemberForm" class="modal-form">
+        <input type="hidden" id="editMemberId" />
+        
+        <div class="form-group">
+          <label for="editName">Full Name</label>
+          <input type="text" id="editName" required />
+        </div>
+        
+        <div class="form-group">
+          <label for="editEmail">Email Address</label>
+          <input type="email" id="editEmail" required />
+        </div>
+        
+        <div class="form-group">
+          <label for="editEvent">DECA Event</label>
+          <select id="editEvent" required>
+            <option value="Business Administration Core">Business Administration Core</option>
+            <option value="Business Management and Administration">Business Management and Administration</option>
+            <option value="Entrepreneurship">Entrepreneurship</option>
+            <option value="Finance">Finance</option>
+            <option value="Hospitality and Tourism">Hospitality and Tourism</option>
+            <option value="Marketing">Marketing</option>
+            <option value="Personal Financial Literacy">Personal Financial Literacy</option>
+          </select>
+        </div>
+        
+        <div class="form-group">
+          <label for="editType">Member Type</label>
+          <select id="editType" required>
+            <option value="active">Active Member</option>
+            <option value="officer">Officer</option>
+            <option value="advisor">Advisor</option>
+          </select>
+        </div>
+        
+        <div class="form-actions">
+          <button type="button" class="btn-danger" onclick="confirmDeleteMember()">
+            <i class="fas fa-trash"></i> Delete Member
+          </button>
+          <button type="button" class="btn-secondary" onclick="closeEditModal()">
+            Cancel
+          </button>
+          <button type="submit" class="btn-primary">
+            <i class="fas fa-save"></i> Save Changes
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Delete Confirmation Modal -->
+  <div id="deleteConfirmModal" class="delete-modal">
+    <div class="delete-modal-content">
+      <h2><i class="fas fa-exclamation-triangle"></i> Confirm Delete</h2>
+      <p>Are you sure you want to delete this member? This action cannot be undone and will permanently remove the member from the system.</p>
+      <div class="delete-modal-actions">
+        <button class="btn-secondary" id="cancelDeleteBtn">
+          <i class="fas fa-times"></i> Cancel
+        </button>
+        <button class="btn-danger" id="confirmDeleteBtn">
+          <i class="fas fa-trash"></i> Delete Member
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Hold members in memory for filtering/editing
+    let members = [];
+    let memberToDeleteId = null;
+    let currentFilter = 'all';
+
+    const membersGrid = document.getElementById("membersGrid");
+    const searchInput = document.getElementById("searchInput");
+    const filterButtons = document.querySelectorAll('.filter-btn');
+
+    // Modal elements
+    const editModal = document.getElementById("editModal");
+    const editForm = document.getElementById("editMemberForm");
+    const editMemberId = document.getElementById("editMemberId");
+    const editName = document.getElementById("editName");
+    const editEmail = document.getElementById("editEmail");
+    const editEvent = document.getElementById("editEvent");
+    const editType = document.getElementById("editType");
+
+    const deleteConfirmModal = document.getElementById("deleteConfirmModal");
+    const confirmDeleteBtn = document.getElementById("confirmDeleteBtn");
+    const cancelDeleteBtn = document.getElementById("cancelDeleteBtn");
+
+    // Utility: get initials from name for avatar
+    function getInitials(name) {
+      if (!name) return "";
+      const parts = name.trim().split(" ");
+      if (parts.length === 1) return parts[0][0].toUpperCase();
+      return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+    }
+
+    // Render member cards to DOM
+    function renderMembers(membersToRender) {
+      if (!membersToRender.length) {
+        membersGrid.innerHTML = `
+          <div class="no-members">
+            <i class="fas fa-users"></i>
+            <p>No members found matching your criteria.</p>
+          </div>
+        `;
+        return;
+      }
+
+      membersGrid.innerHTML = "";
+      membersToRender.forEach((member) => {
+        const card = document.createElement("div");
+        card.className = `member-card ${member.type.toLowerCase()}`;
+
+        card.innerHTML = `
+          <div class="member-header">
+            <div class="member-avatar">${getInitials(member.name)}</div>
+            <div class="member-info">
+              <h3 class="member-name">${member.name}</h3>
+              <span class="member-type ${member.type.toLowerCase()}">${member.type}</span>
+            </div>
+          </div>
+          <div class="member-details">
+            <div class="detail-item">
+              <i class="fas fa-envelope"></i> ${member.email}
+            </div>
+            <div class="detail-item">
+              <i class="fas fa-clipboard-list"></i> ${member.event}
+            </div>
+          </div>
+          <div class="member-actions">
+            <button class="action-btn btn-edit" onclick="openEditModal('${member.id}')">
+              <i class="fas fa-edit"></i> Edit
+            </button>
+            <button class="action-btn btn-delete" onclick="openDeleteModal('${member.id}')">
+              <i class="fas fa-trash"></i> Delete
+            </button>
+          </div>
+        `;
+
+        membersGrid.appendChild(card);
+      });
+    }
+
+    // Filter members by search input and type filter
+    function filterMembers() {
+      const query = searchInput.value.toLowerCase().trim();
+      let filtered = members;
+
+      // Apply search filter
+      if (query) {
+        filtered = filtered.filter(
+          (m) =>
+            m.name.toLowerCase().includes(query) ||
+            m.email.toLowerCase().includes(query)
+        );
+      }
+
+      // Apply type filter
+      if (currentFilter !== 'all') {
+        filtered = filtered.filter(m => m.type.toLowerCase() === currentFilter);
+      }
+
+      renderMembers(filtered);
+    }
+
+    // Load and render members from Firestore
+    async function loadMembers() {
+      try {
+        members = await window.FirebaseDB.getMembers();
+        filterMembers();
+      } catch (error) {
+        console.error("Error loading members:", error);
+        membersGrid.innerHTML = `
+          <div class="no-members">
+            <i class="fas fa-exclamation-triangle"></i>
+            <p>Failed to load members. Please try refreshing the page.</p>
+          </div>
+        `;
+      }
+    }
+
+    // Open edit modal with member data loaded
+    function openEditModal(memberId) {
+      const member = members.find((m) => m.id === memberId);
+      if (!member) return;
+
+      editMemberId.value = member.id;
+      editName.value = member.name;
+      editEmail.value = member.email;
+      editEvent.value = member.event;
+      editType.value = member.type;
+
+      editModal.style.display = "block";
+    }
+
+    // Close edit modal
+    function closeEditModal() {
+      editModal.style.display = "none";
+      editForm.reset();
+      memberToDeleteId = null;
+      hideDeleteConfirm();
+    }
+    window.closeEditModal = closeEditModal;
+
+    // Open delete confirmation modal
+    function openDeleteModal(memberId) {
+      memberToDeleteId = memberId;
+      deleteConfirmModal.style.display = "block";
+    }
+
+    // Show delete confirmation modal
+    function showDeleteConfirm() {
+      deleteConfirmModal.style.display = "block";
+    }
+
+    // Hide delete confirmation modal
+    function hideDeleteConfirm() {
+      deleteConfirmModal.style.display = "none";
+    }
+
+    // Delete member from Firestore and update UI
+    async function deleteMember() {
+      if (!memberToDeleteId) return;
+      try {
+        await window.FirebaseDB.deleteMember(memberToDeleteId);
+        hideDeleteConfirm();
+        closeEditModal();
+        await loadMembers();
+      } catch (error) {
+        alert("Failed to delete member. See console for details.");
+        console.error(error);
+      }
+    }
+
+    // Event Listeners
+    searchInput.addEventListener("input", filterMembers);
+
+    filterButtons.forEach(button => {
+      button.addEventListener('click', () => {
+        filterButtons.forEach(btn => btn.classList.remove('active'));
+        button.classList.add('active');
+        currentFilter = button.dataset.filter;
+        filterMembers();
+      });
+    });
+
+    // Cancel delete modal button handler
+    cancelDeleteBtn.addEventListener("click", () => {
+      memberToDeleteId = null;
+      hideDeleteConfirm();
+    });
+
+    // Confirm delete modal button handler
+    confirmDeleteBtn.addEventListener("click", deleteMember);
+
+    // Handle edit form submit - update member in Firestore
+    editForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const id = editMemberId.value;
+      const updatedMember = {
+        name: editName.value.trim(),
+        email: editEmail.value.trim(),
+        event: editEvent.value,
+        type: editType.value,
+      };
+
+      if (
+        !updatedMember.name ||
+        !updatedMember.email ||
+        !updatedMember.event ||
+        !updatedMember.type
+      ) {
+        alert("Please fill all required fields.");
+        return;
+      }
+
+      try {
+        await window.FirebaseDB.updateMember(id, updatedMember);
+        closeEditModal();
+        await loadMembers();
+      } catch (error) {
+        alert("Failed to update member. See console for details.");
+        console.error(error);
+      }
+    });
+
+    // Close modals when clicking outside
+    window.addEventListener('click', (e) => {
+      if (e.target === editModal) {
+        closeEditModal();
+      }
+      if (e.target === deleteConfirmModal) {
+        hideDeleteConfirm();
+      }
+    });
+
+    // Check admin authentication with better state checking
+    function checkAdminAuth() {
+      // Check if admin state exists and is logged in
+      if (window.adminState && window.adminState.isLoggedIn) {
+        return true;
+      }
+      
+      // Also check sessionStorage as backup
+      if (sessionStorage.getItem('adminLoggedIn') === 'true') {
+        return true;
+      }
+      
+      // If not logged in, redirect
+      alert('You must be logged in as an admin to access this page.');
+      window.location.href = 'index.html';
+      return false;
+    }
+
+    // Wait for both Firebase and admin state to be ready
+    function initializePage() {
+      // Wait a bit for sidebar to initialize admin state
+      setTimeout(() => {
+        if (checkAdminAuth()) {
+          loadMembers();
+        }
+      }, 500);
+    }
+
+    // Initial load, wait for Firebase ready event if needed
+    if (window.firebaseReady) {
+      initializePage();
+    } else {
+      window.addEventListener("firebaseReady", initializePage);
+    }
+
+    // Also try to initialize when DOM is fully loaded
+    document.addEventListener('DOMContentLoaded', () => {
+      // Give sidebar time to initialize
+      setTimeout(() => {
+        if (!window.firebaseReady) {
+          // If Firebase isn't ready yet, wait for it
+          window.addEventListener("firebaseReady", initializePage);
+        } else {
+          // If Firebase is ready, try to initialize now
+          initializePage();
+        }
+      }, 1000);
+    });
+  </script>
+</body>
+</html>
