@@ -1,6 +1,6 @@
 # Tom Glenn DECA Chapter Dashboard
 
-A web dashboard I built to help run our DECA chapter. Officers use it to keep track of members, competition and activity points, meeting attendance, and volunteer/service minutes in one place instead of scattered spreadsheets.
+A web dashboard I codeveloped to help run our DECA chapter. Officers use it to keep track of members, competition and activity points, meeting attendance, and volunteer/service minutes in one place instead of scattered spreadsheets.
 
 <!-- Live demo: add your Firebase Hosting link here, e.g. https://your-project.web.app -->
 
