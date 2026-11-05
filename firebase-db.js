@@ -7,7 +7,6 @@ import {
 } from "https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore.js";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyA5SLobxVAntNw96vJlW1fv4ZXXhl_uImo",
   authDomain: "deca-website-bbdde.firebaseapp.com",
   projectId: "deca-website-bbdde",
   storageBucket: "deca-website-bbdde.firebasestorage.app",
